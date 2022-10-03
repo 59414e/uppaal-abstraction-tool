@@ -1,0 +1,9 @@
+int ballots_received(){
+    int i;
+        int res=0;
+        if(tally_sum!=0)return tally_sum;
+    for(i=1;i<=N_C;i++){
+        res+=tally[i];
+    }
+    return res;
+}

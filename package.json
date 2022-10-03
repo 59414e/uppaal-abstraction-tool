@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "antlr4": "^4.11.0",
+    "xml2js": "^0.4.23"
+  }
+}
