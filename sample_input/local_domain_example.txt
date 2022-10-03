@@ -1,0 +1,28 @@
+// aproksymacja gorna domeny lokalnej
+{
+	template: "Voter",
+	// mem_dec, mem_sg, mem_vt
+	d:{
+		idle:  [ [0,0,0] ],
+		waits: [ [1,0,0], [2,0,0] ],
+		has:   [ [1,0,0], [2,0,0] ],
+		voted: [ [1,0,0], [1,1,0], 
+				 [1,0,1], [1,1,1], 
+				 [1,0,2], [1,1,2], 
+				 [2,0,0], [2,1,0], 
+				 [2,0,1], [2,1,1], 
+				 [2,0,2], [2,1,2] ]
+	}
+}
+
+// aproksymacja dolna domeny lokalnej
+{
+	template: "Voter",
+	// mem_dec, mem_sg, mem_vt
+	d:{
+		idle:  [ [0,0,0] ],
+		waits: [ ],
+		has:   [ ],
+		voted: [ ]
+	}
+}
