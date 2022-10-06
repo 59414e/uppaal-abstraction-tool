@@ -84,7 +84,7 @@ export default class UppaalXML {
 
             // shorthand for edge details (labels, src, trg) of a given type
             for(let i =0; i<this.nta.template.length;i++){
-                this.nta.template[i].transition.forEach(t => {
+                this.nta.template[i].transition?.forEach(t => {
                     Object.defineProperties(t, {
                         "guard": {
                             enumerable: false,
@@ -284,4 +284,153 @@ export default class UppaalXML {
     getLocationIdToNameMap(_tname){
         return this[_tname].location.reduce((acc,y)=>(acc[y.$.id]=y.name?.[0]?._||"",acc),{});
     }
+
+    // location name must start with a-zA-Z letter
+    addLocationToTemplate(_tname,_location_id,_pos_x,_pos_y){
+        let x_pad = -10;
+        let y_pad = -34;
+        let obj = {            
+            '$':{
+                'id':_location_id,
+                // 'x': _pos_x,
+                // 'y': _pos_y,
+                // todo: below should be parameterized
+            },
+            'name':[{
+                '_':_location_id,
+                // '$': {
+                //     'x':Number(_pos_x)+x_pad,
+                //     'y':Number(_pos_y)+y_pad
+                // }
+            }]
+        }
+        return this[_tname].location.push(obj);
+    }
+
+    flushTemplateLocations(_tname){
+        this[_tname].location = [];
+    }
+
+    importLocation(_tname, _loc, x_padding = -10, y_padding = -34){
+        let obj = {
+            '$':{
+                'id':loc.id
+            },
+            'name':[{
+                '_': loc.name || loc.id
+            }]
+        };
+        if(loc.pos){
+            obj['$']['x']=loc.pos.x;
+            obj['$']['y']=loc.pos.y;
+            obj['name'][0]['$'] = {
+                'x':Number(loc.pos.x) + x_padding,
+                'y':Number(loc.pos.y) + y_padding
+            }
+        }
+        return this[_tname].location.push(obj);        
+    }
+
+    setInitLocationToTemplate(_tname, _loc_id){
+        // if(this[_tname].init){
+        //     delete this[_tname].init;
+        // }
+        return this[_tname].init = [{'$':{'ref':_loc_id}}];
+    }
+
+    pushLocationToTemplate(_tname,_loc){
+        return this[_tname].location.push(_loc);
+    }
+
+    // _edge as object with flat attributes
+    importEdgeToTemplate(_tname, _edge){
+        let obj = {
+            'source':[{
+                '$':{
+                    'ref':_edge.src
+                }
+            }],
+            'target':[{
+                '$':{
+                    'ref':_edge.trg
+                }
+            }]
+        }
+        let labels = [];
+        ['select', 'guard', 'synchronisation', 'assignment'].forEach(_kind=>{
+            if(_edge[_kind]){
+                labels.push({
+                    '_':_edge[_kind],
+                    '$': {
+                        kind: _kind,
+                        // x: _, // avg src.pos and trg.pos + padding 
+                        // y: _,
+                    }
+                });
+            }
+        })
+        if(labels.length!=0){
+            obj.label = labels;
+        }
+
+
+        if(!this[_tname].transition){
+            this[_tname].transition = [];
+        }
+        return this[_tname].transition.push(obj);        
+    }
 }
+
+
+
+// temporary chunks
+// function convertLabelToXML(kind, body){
+//     return `<label kind="${kind}"><${body}/label>`;
+// }
+
+// //todo: put under UEdge class as method
+// function convertEdgeLabelToXML(edge){
+//     let kindList = ["select", "guard", "synchronisation", "assignment"]
+//     let str = "";
+//     kindList.forEach(kind=>{
+//         if(edge[kind])str+=convertLabelToXML(kind, edge[kind])
+//     })
+//     return str;
+// }
+
+// function convertEdgeToXML(edge){
+//     let str = "<transition>\n";
+//     str += `<source ref="${edge.src}"/>\n`;
+//     str += `<target ref="${edge.trg}"/>\n`;
+//     str += convertEdgeLabelToXML(edge) + '\n';
+//     str += `</transition>\n`;
+//     return str;
+// }
+
+// // todo: add pos attributes (with auto-set option)
+// function convertLocationToXML(loc){
+//     let str = `<location id="${loc.id}">\n`;
+//     if(loc.name)str+=`<name>${loc.name}</name>\n`;
+//     str+=`</location>`;
+//     return str;
+// }
+
+// function convertLocationToObj(loc, x_padding = -10, y_padding = -34){
+//     let obj = {
+//         '$':{
+//             'id':loc.id
+//         },
+//         'name':[{
+//             '_': loc.name || loc.id
+//         }]
+//     };
+//     if(loc.pos){
+//         obj['$']['x']=loc.pos.x;
+//         obj['$']['y']=loc.pos.y;
+//         obj['name'][0]['$'] = {
+//             'x':Number(loc.pos.x) + x_padding,
+//             'y':Number(loc.pos.y) + y_padding
+//         }
+//     }
+//     return obj;
+// }

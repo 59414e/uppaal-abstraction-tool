@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+        <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'><nta>
+  <declaration>// Place global declarations here.&#xD;
+const int N_V = 1;&#xD;
+const int N_C = 2;&#xD;
+&#xD;
+chan decl[N_V+1];&#xD;
+chan coll[N_V+1];&#xD;
+chan vote[N_V+1];&#xD;
+int[0,N_V] tally[N_C+1];&#xD;
+int tally_sum;&#xD;
+int[0,2] sh_dec; // 1 - inperson, 2 - by mail&#xD;
+int[0,1] buff_mail[N_V+1]; // election package is delivered to mailbox&#xD;
+int[0,N_C] sh_vt; // chosen candidate&#xD;
+int[0,1] sh_sg; // signed form (honest+private casting)&#xD;
+&#xD;
+int ballots_received(){&#xD;
+    int i;&#xD;
+	int res=0;&#xD;
+	if(tally_sum!=0)return tally_sum;&#xD;
+    for(i=1;i&lt;=N_C;i++){&#xD;
+        res+=tally[i];&#xD;
+    }&#xD;
+    return res;&#xD;
+}&#xD;
+</declaration>
+  <template>
+    <name x="5" y="5">ExtendedMAS</name>
+    <declaration>// From [object Object]:
+// Place local declarations here.&#xD;
+const int id=1;&#xD;
+int[0,2] mem_dec;&#xD;
+int[0,1] mem_sg;&#xD;
+int[0,N_C] mem_vt;
+// From Authority:
+int[0,2] dec_recv[N_V+1];  // 1 - inperson, 2 - mailbox&#xD;
+int[0,1] pack_sent[N_V+1];&#xD;
+int[0,N_C] vt_recv[N_V+1]; &#xD;
+int[0,1] sg_recv[N_V+1]; &#xD;
+&#xD;
+/*&#xD;
+void foo(){&#xD;
+    meta int i;&#xD;
+    for(i=1;i&lt;=N_V;i++){&#xD;
+        dec_recv[i]=0;&#xD;
+    }&#xD;
+}&#xD;
+*/</declaration>
+    <location id="id3__id6">
+      <name>id3__id6</name>
+    </location>
+    <location id="id3__id5">
+      <name>id3__id5</name>
+    </location>
+    <location id="id2__id6">
+      <name>id2__id6</name>
+    </location>
+    <location id="id3__id4">
+      <name>id3__id4</name>
+    </location>
+    <location id="id0__id6">
+      <name>id0__id6</name>
+    </location>
+    <location id="id2__id5">
+      <name>id2__id5</name>
+    </location>
+    <location id="id0__id5">
+      <name>id0__id5</name>
+    </location>
+    <location id="id2__id4">
+      <name>id2__id4</name>
+    </location>
+    <location id="id0__id4">
+      <name>id0__id4</name>
+    </location>
+    <location id="id1__id4">
+      <name>id1__id4</name>
+    </location>
+    <init ref="id3__id6"/>
+    <transition>
+      <source ref="id3__id6"/>
+      <target ref="id3__id5"/>
+    </transition>
+    <transition>
+      <source ref="id3__id6"/>
+      <target ref="id2__id6"/>
+      <label kind="select">inperson:int[1,2],
+v_i:int[1,N_V]</label>
+      <label kind="guard">id==v_i</label>
+      <label kind="assignment">mem_dec=inperson,&#xD;
+sh_dec=inperson,
+dec_recv[v_i]=sh_dec,&#xD;
+sh_dec=0</label>
+    </transition>
+    <transition>
+      <source ref="id3__id5"/>
+      <target ref="id3__id5"/>
+      <label kind="select">v_i:int[1,N_V]</label>
+      <label kind="guard">dec_recv[v_i]==2 &amp;&amp;&#xD;
+!pack_sent[v_i]</label>
+      <label kind="assignment">buff_mail[v_i]=1,&#xD;
+pack_sent[v_i]++</label>
+    </transition>
+    <transition>
+      <source ref="id3__id5"/>
+      <target ref="id3__id4"/>
+    </transition>
+    <transition>
+      <source ref="id2__id6"/>
+      <target ref="id0__id6"/>
+      <label kind="guard">mem_vt==2 &amp;&amp; buff_mail[id]</label>
+      <label kind="assignment">buff_mail[id]=0</label>
+    </transition>
+    <transition>
+      <source ref="id2__id6"/>
+      <target ref="id2__id5"/>
+    </transition>
+    <transition>
+      <source ref="id0__id6"/>
+      <target ref="id0__id5"/>
+    </transition>
+    <transition>
+      <source ref="id2__id5"/>
+      <target ref="id0__id5"/>
+      <label kind="guard">mem_vt==2 &amp;&amp; buff_mail[id]</label>
+      <label kind="assignment">buff_mail[id]=0</label>
+    </transition>
+    <transition>
+      <source ref="id2__id5"/>
+      <target ref="id2__id5"/>
+      <label kind="select">v_i:int[1,N_V]</label>
+      <label kind="guard">dec_recv[v_i]==2 &amp;&amp;&#xD;
+!pack_sent[v_i]</label>
+      <label kind="assignment">buff_mail[v_i]=1,&#xD;
+pack_sent[v_i]++</label>
+    </transition>
+    <transition>
+      <source ref="id2__id5"/>
+      <target ref="id2__id4"/>
+    </transition>
+    <transition>
+      <source ref="id2__id5"/>
+      <target ref="id0__id5"/>
+      <label kind="select">v_i:int[1,N_V]</label>
+      <label kind="guard">id==v_i &amp;&amp; mem_dec==1 &amp;&amp; dec_recv[v_i]==1 &amp;&amp;&#xD;
+!pack_sent[v_i]</label>
+      <label kind="assignment">pack_sent[v_i]++</label>
+    </transition>
+    <transition>
+      <source ref="id0__id5"/>
+      <target ref="id0__id5"/>
+      <label kind="select">v_i:int[1,N_V]</label>
+      <label kind="guard">dec_recv[v_i]==2 &amp;&amp;&#xD;
+!pack_sent[v_i]</label>
+      <label kind="assignment">buff_mail[v_i]=1,&#xD;
+pack_sent[v_i]++</label>
+    </transition>
+    <transition>
+      <source ref="id0__id5"/>
+      <target ref="id0__id4"/>
+    </transition>
+    <transition>
+      <source ref="id2__id4"/>
+      <target ref="id0__id4"/>
+      <label kind="guard">mem_vt==2 &amp;&amp; buff_mail[id]</label>
+      <label kind="assignment">buff_mail[id]=0</label>
+    </transition>
+    <transition>
+      <source ref="id0__id4"/>
+      <target ref="id1__id4"/>
+      <label kind="select">vt:int[0,N_C],&#xD;
+sg:int[0,1],
+v_i:int[1,N_V]</label>
+      <label kind="guard">id==v_i</label>
+      <label kind="assignment">sh_vt=vt,&#xD;
+sh_sg=sg,&#xD;
+mem_sg=sg,&#xD;
+mem_vt=vt,
+tally[((sh_vt-1)+N_C)%N_C+1]=sh_sg &amp;&amp; sh_vt&gt;0 ? tally[sh_vt]+1 : tally[((sh_vt-1)+N_C)%N_C+1],&#xD;
+sh_vt=0,&#xD;
+sh_sg=0</label>
+    </transition>
+  </template>
+  <system>// Place template instantiations here.&#xD;
+Process = ExtendedMAS();&#xD;
+// List one or more processes to be composed into a system.&#xD;
+system Process;&#xD;
+    </system>
+  <queries>
+    <query>
+      <formula/>
+      <comment/>
+    </query>
+  </queries>
+</nta>
