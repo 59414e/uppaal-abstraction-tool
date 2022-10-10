@@ -213,6 +213,10 @@ export default class UppaalXML {
         // return locs;
     }
 
+    getInitialLocationOf(_tname){
+        return this[_tname].init[0]?.$?.ref;
+    }
+
     // returns a list of all location ids of its templates
     getAllLocations(){
         return this.getTemplateNames().reduce((acc,tname)=>acc.concat(this.getLocationsOf(tname)),[]);
@@ -378,6 +382,72 @@ export default class UppaalXML {
             this[_tname].transition = [];
         }
         return this[_tname].transition.push(obj);        
+    }
+
+    reachabilityVectorOf(_tname){
+        let nodes = this[_tname].location.map(l=>l.$.id);
+        let edges = this[_tname].transition.map(e=>[e.src,e.trg])
+        const n = nodes.length;
+
+        let adj_m = Array.from(Array(n), ()=>new Array(n).fill(0));
+        edges.forEach(e=>{
+            let src = nodes.indexOf(e[0]);
+            let trg = nodes.indexOf(e[1]);
+            adj_m[src][trg] = 1;
+        })
+
+        let d = JSON.parse(JSON.stringify(adj_m));
+
+        for(let k=0;k<n;k++){
+            for(let i=0;i<n;i++){
+                for(let j=0;j<n;j++){
+                    d[i][j] = d[i][j] ||  d[i][k] && d[k][j];
+                }
+            }
+        }
+
+        // clear out the diagonal
+        for(let i=0;i<n;i++){
+            // d[i][i] = d[i][i] && adj_m[i][i];
+            d[i][i] = 0;
+        }
+
+        let rvec = nodes.reduce((acc,el,ind)=>(
+            acc[el]=d[ind].reduce((a,b)=>a+=b,0),
+            acc
+        ),{});
+
+        return rvec;
+    }
+
+    adjacencyListOf(_tname){
+        let nodes = this[_tname].location.map(l=>l.$.id);
+        let edges = this[_tname].transition.map(e=>[e.src,e.trg])
+
+        return nodes.reduce((acc,curr)=>(
+            acc[curr] = [...new Set(edges.filter(e=>e[0]==curr).map(e=>e[1]))],
+            acc
+        ),{})
+    }
+
+    edgeMapOf(_tname){
+        let nodes = this[_tname].location.map(l=>l.$.id);
+        
+        const n = nodes.length;
+        let res = {};
+
+        for(let i=0;i<n;i++){
+            res[nodes[i]] = {};
+            for(let j=0;j<n;j++){
+                res[nodes[i]][nodes[j]] = [];
+            }
+        }
+
+        this[_tname].transition.forEach(edge=>{
+            res[edge.src][edge.trg].push(edge);
+        })
+        
+        return res;
     }
 }
 

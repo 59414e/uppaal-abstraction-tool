@@ -6,7 +6,8 @@ Steps:
 
 Notes:
 * according to df the resulting MAS graph must be synch-free
-* assumptions same as for the PART B
+* assumptions same as for the PART B + no name collision
+* limitation in agent instances (templates must be singletons without parameter)
 
 
 // TODO: justification on why we can re-use the d for e.g. one voter in abstraction for conf. with X-voters...
