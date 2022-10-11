@@ -12,6 +12,7 @@
 
 // todo:
 // * add const preproc
+// * do not allow arrays (arr identifiers atm will be processed as variables potentially causing the logical errors)
 
 // QOL todo:
 // * add colours to console error, warn, info (or import chalk module)
@@ -54,7 +55,12 @@ let val0 = [0,0,0];
 //     'mem_sg':0, 
 //     'mem_vt':0
 // };
+
 let model = new UppaalXML(xmlInputString);
+
+
+const constDict = getConstVars(model.global +'\n'+ model.nta.template[0].declaration[0]);
+
 let llist = model.getLocationsOf('ExtendedMAS');
 
 const adj_list = model.adjacencyListOf("ExtendedMAS");
@@ -108,6 +114,9 @@ for(let i=0;i<llist.length;i++){
         })
     }
 }
+
+// const d0 = [];
+// const d0 = '*';
 
 let ld = llist.reduce((acc,el)=>(acc[el]=new Set(),acc),{}); // local domain map initialized with zeros
 // let ld = llist.reduce((acc,el)=>(acc[el]=vvars.reduce((obj,curr)=>(obj[curr] = new Set(), obj),{}),acc),{}); // local domain map initialized with zeros
@@ -188,19 +197,45 @@ while(queue.size!=0){
 }
 
 console.log(ld);
+console.log(restictionOfLocalDomain(ld, 1, '__', 'intersection'))
 
+
+function restictionOfLocalDomain(ld, i, sep='__', op='union'){
+    let res = {};
+    for(let lid in ld){
+        let j = lid.split(sep)[i];
+        if(!res.hasOwnProperty(j)){
+            res[j] = new Set([...ld[lid]]);
+        }else{
+            if(op=='union'){
+                [...ld[lid]].forEach(x=>res[j].add(x))
+            }else{ // 'intersection'
+                res[j] = new Set([...res[j]].filter(x=>ld[lid].has(x)));
+            }
+        }
+
+        
+    }
+    return res;
+}
 
 // \begin{tests}
 
 // \end{tests}
+// let test = 
 
+// getConstVars(model.global)
 
+function getConstVars(input){
+    let {tree, myListener} = parseTreeWalk(input, 'translation');
+    return myListener._const_dict;
+}
 
 // TODO: extract const var-val map
 // ....
 
 
-
+// note: uses cosntDict (global var)
 function procEdgeLabels(edge, vvars, model, _ld_src, _ld_trg){
     let ld_src = new Set([..._ld_src].map(x=>x.split(',')));
     // let ld_trg = _ld_trg.split(',');
@@ -208,11 +243,11 @@ function procEdgeLabels(edge, vvars, model, _ld_src, _ld_trg){
     // todo: extend with consts evaluation
     let etaRestriction = {}
 
-    const constDict = {
-        "N_V":1,
-        "N_C":2,
-        "id":1,
-    }
+    // const constDict = {
+    //     "N_V":1,
+    //     "N_C":2,
+    //     "id":1,
+    // }
     
     // get all variables that appear in the guard
     // filter out d to that which agree with guard
@@ -265,7 +300,7 @@ function procEdgeLabels(edge, vvars, model, _ld_src, _ld_trg){
                 break;
             }
         }
-        if(!appearsInRHS)console.log(`removed ${temp[i][0]}=${temp[i][1]}`);
+        if(!appearsInRHS)console.log(`Irrelevant and removed: ${temp[i][0]}=${temp[i][1]}`);
         return appearsInRHS;
     })
 
@@ -435,7 +470,26 @@ function parseEdgeLabel(input, ruleName='expr'){
         console.log(`ERR: encountered an unexpected type of input = ${typeof input}`);
         return 0;
     }
-    
+    const {tree, myListener} = parseTreeWalk(input, ruleName);
+    // const chars = new antlr4.InputStream(input);
+    // const lexer = new yagLexer(chars);
+    // const tokens = new antlr4.CommonTokenStream(lexer);
+    // const parser = new yagParser(tokens);
+    // parser.buildParseTrees = true;
+    // const tree = parser[ruleName]();
+    // const myListener = new CustomListener();
+    // antlr4.tree.ParseTreeWalker.DEFAULT.walk(myListener, tree);
+    return {
+        listener: myListener,
+        // tree:tree,
+        vars: myListener.getVarList(tree),
+        lhs: [...myListener.lhs_vars],
+        rhs: [...myListener.rhs_vars],
+        substituteCall: myListener.substiteCallback(tree),
+    };
+}
+
+function parseTreeWalk(input, ruleName = 'expr'){
     const chars = new antlr4.InputStream(input);
     const lexer = new yagLexer(chars);
     const tokens = new antlr4.CommonTokenStream(lexer);
@@ -445,13 +499,9 @@ function parseEdgeLabel(input, ruleName='expr'){
     const myListener = new CustomListener();
     antlr4.tree.ParseTreeWalker.DEFAULT.walk(myListener, tree);
     return {
-        listener: myListener,
-        // tree:tree,
-        vars: myListener.getVarList(tree),
-        lhs: [...myListener.lhs_vars],
-        rhs: [...myListener.rhs_vars],
-        substituteCall: myListener.substiteCallback(tree),
-    };
+        "tree": tree,
+        "myListener": myListener
+    }
 }
 
 // todo: refine - add vars from upd

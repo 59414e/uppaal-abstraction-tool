@@ -20,6 +20,9 @@ export default class CustomListener1 extends yagListener{
         // variables ctx list
         this._vlist = [];
 
+		// const vars
+		this._const_dict = {};
+
         // stmt ctx list
         this._stmtlist = [];
 
@@ -49,6 +52,16 @@ export default class CustomListener1 extends yagListener{
 
 	// Enter a parse tree produced by yagParser#vdec_list.
 	enterVdec_list(ctx) {
+		// check if not local (i.e. within fdec)
+		if(!this?.curr_fparams && !this?.curr_fparams?.length>=0){
+			if(this.joinToString(ctx.getChild(0)?.getChild(0)) === 'const'){
+				for(let ii = 1;ii<ctx.getChildCount();ii+=2){
+					let pair = this.joinToString(ctx?.getChild(1)).split(' = ');
+					this._const_dict[pair[0]] = pair[1];
+					// console.log([pair[0], pair[1]])
+				}
+			}
+		}
 	}
 
 	// Exit a parse tree produced by yagParser#vdec_list.
@@ -245,6 +258,7 @@ export default class CustomListener1 extends yagListener{
 		}
 	}
 
+	// todo: change to a special instance of renameWithCallbackStr
 	substituteStr(ctx,dict){
 		if (!ctx) return '';
 		let str_arr = [];
@@ -259,12 +273,28 @@ export default class CustomListener1 extends yagListener{
                 str_arr.push(this.substituteStr(ctx.getChild(i),dict));
             }
         }
-
         return (
             cleanupStr(str_arr.join(' '))
         );
+	}
 
-		
+	renameWithCallbackStr(ctx, cb){
+		if (!ctx) return '';
+		let str_arr = [];
+        let n = ctx.getChildCount();
+
+		if(ctx.vid){
+			str_arr.push(cb(ctx.vid.text))
+		}else if (n == 0) {
+			str_arr.push(ctx.getText())
+        } else {
+            for (let i = 0; i < n; i++) {
+                str_arr.push(this.renameWithCallbackStr(ctx.getChild(i),cb));
+            }
+        }
+        return (
+            cleanupStr(str_arr.join(' '))
+        );
 	}
 
     getVarList(ctx) {

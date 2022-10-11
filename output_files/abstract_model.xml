@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
         <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'><nta>
-  <declaration>const int __d_vals_at_id0__l78udw64[1][2] = {{0,0}};
-const int __d_vals_at_id1__l78udw64[6][2] = {{0,0},{0,1},{0,2},{1,0},{1,1},{1,2}};
-const int __d_vals_at_id2__l78udw64[1][2] = {{0,0}};
-const int __d_vals_at_id3__l78udw64[1][2] = {{0,0}};
+  <declaration>const int __d_vals_at_id0__l948ze4l[1][2] = {{0,0}};
+const int __d_vals_at_id1__l948ze4l[6][2] = {{0,0},{0,1},{0,2},{1,0},{1,1},{1,2}};
+const int __d_vals_at_id2__l948ze4l[1][2] = {{0,0}};
+const int __d_vals_at_id3__l948ze4l[1][2] = {{0,0}};
 // Place global declarations here.&#xD;
 const int N_V = 5;&#xD;
 const int N_C = 2;&#xD;
@@ -27,7 +27,7 @@ int ballots_received(){&#xD;
     }&#xD;
     return res;&#xD;
 }&#xD;
-int _ballots_received___l78udw64 ( int mem_sg, int mem_vt ) { int i; int res = 0; if ( tally_sum != 0 ) return tally_sum; for ( i = 1; i &lt;= N_C; i ++ ) { res += tally [ i ]; } return res; }</declaration>
+int _ballots_received___l948ze4l ( int mem_sg, int mem_vt ) { int i; int res = 0; if ( tally_sum != 0 ) return tally_sum; for ( i = 1; i &lt;= N_C; i ++ ) { res += tally [ i ]; } return res; }</declaration>
   <template>
     <name x="5" y="5">Voter</name>
     <parameter>int[1,N_V] id</parameter>
@@ -37,11 +37,11 @@ int[0,1] mem_sg;&#xD;
 int[0,N_C] mem_vt;
 int validVote = 0;
 int invalidVote = 1;
-void _set_argsr_values__l78udw64(int _val_of_mem_sg, int _val_of_mem_vt){
+void _set_argsr_values__l948ze4l(int _val_of_mem_sg, int _val_of_mem_vt){
 	mem_sg= _val_of_mem_sg;
 	mem_vt= _val_of_mem_vt;
 }
-void _update_argsn_values__l78udw64(bool reset_validVote,bool reset_invalidVote){
+void _update_argsn_values__l948ze4l(bool reset_validVote,bool reset_invalidVote){
 	validVote=reset_validVote ? 0 : mem_sg &amp;&amp; mem_vt;
 	invalidVote=reset_invalidVote ? 1 : !(mem_sg &amp;&amp; mem_vt);
 }</declaration>
@@ -63,34 +63,34 @@ void _update_argsn_values__l78udw64(bool reset_validVote,bool reset_invalidVote)
       <target ref="id1"/>
       <label kind="select" x="128" y="-312">vt:int[0,N_C],&#xD;
 sg:int[0,1],
-_l78udw64:int[0,0]</label>
+_l948ze4l:int[0,0]</label>
       <label kind="synchronisation" x="128" y="-280">vote [ id ]!</label>
-      <label kind="assignment" x="128" y="-264">_update_argsn_values__l78udw64(0,0),
-_set_argsr_values__l78udw64(0,0),
+      <label kind="assignment" x="128" y="-264">_set_argsr_values__l948ze4l(__d_vals_at_id0__l948ze4l[_l948ze4l][0],__d_vals_at_id0__l948ze4l[_l948ze4l][1]),
+_update_argsn_values__l948ze4l(1,1),
 sh_vt=vt,&#xD;
 sh_sg=sg,&#xD;
 mem_sg=sg,&#xD;
 mem_vt=vt,
-_update_argsn_values__l78udw64(0,0),
-_set_argsr_values__l78udw64(0,0)</label>
+_update_argsn_values__l948ze4l(0,0),
+_set_argsr_values__l948ze4l(0,0)</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="select">_l78udw64:int[0,0]</label>
-      <label kind="guard" x="-56" y="0">__d_vals_at_id2__l78udw64[_l78udw64][1] == 2 &amp;&amp; buff_mail [ id ]</label>
-      <label kind="assignment" x="-56" y="16">_update_argsn_values__l78udw64(0,0),
-_set_argsr_values__l78udw64(0,0),
+      <label kind="select">_l948ze4l:int[0,0]</label>
+      <label kind="guard" x="-56" y="0">__d_vals_at_id2__l948ze4l[_l948ze4l][1] == 2 &amp;&amp; buff_mail [ id ]</label>
+      <label kind="assignment" x="-56" y="16">_set_argsr_values__l948ze4l(__d_vals_at_id2__l948ze4l[_l948ze4l][0],__d_vals_at_id2__l948ze4l[_l948ze4l][1]),
+_update_argsn_values__l948ze4l(1,1),
 buff_mail[id]=0,
-_update_argsn_values__l78udw64(0,0),
-_set_argsr_values__l78udw64(0,0)</label>
+_update_argsn_values__l948ze4l(0,0),
+_set_argsr_values__l948ze4l(0,0)</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="select">_l78udw64:int[0,0]</label>
+      <label kind="select">_l948ze4l:int[0,0]</label>
       <label kind="guard" x="-56" y="-232">mem_dec==1</label>
       <label kind="synchronisation" x="-56" y="-216">coll [ id ]!</label>
       <nail x="-32" y="-192"/>
@@ -99,14 +99,14 @@ _set_argsr_values__l78udw64(0,0)</label>
       <source ref="id3"/>
       <target ref="id2"/>
       <label kind="select" x="-256" y="-264">inperson:int[1,2],
-_l78udw64:int[0,0]</label>
+_l948ze4l:int[0,0]</label>
       <label kind="synchronisation" x="-256" y="-248">decl [ id ]!</label>
-      <label kind="assignment" x="-256" y="-232">_update_argsn_values__l78udw64(0,0),
-_set_argsr_values__l78udw64(0,0),
+      <label kind="assignment" x="-256" y="-232">_set_argsr_values__l948ze4l(__d_vals_at_id3__l948ze4l[_l948ze4l][0],__d_vals_at_id3__l948ze4l[_l948ze4l][1]),
+_update_argsn_values__l948ze4l(1,1),
 mem_dec=inperson,&#xD;
 sh_dec=inperson,
-_update_argsn_values__l78udw64(0,0),
-_set_argsr_values__l78udw64(0,0)</label>
+_update_argsn_values__l948ze4l(0,0),
+_set_argsr_values__l948ze4l(0,0)</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>

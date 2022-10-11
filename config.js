@@ -24,7 +24,9 @@ const CONFIG = {
         return path.join(this.INPUT.DIR, this.INPUT.SAMPLE);
     },
     
-    LDE_namePrefix: "__d_vals", // local domain value (one per (ArgsR,Location) elem)
+    LDE_namePrefix: "__d_vals", // local domain value (one per (ArgsR,Location) elem),
+
+    locationIdSeparator: '__',
 }
 
 export default CONFIG;

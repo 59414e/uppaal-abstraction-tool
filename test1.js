@@ -231,7 +231,7 @@ function bar(model, params) {
                 // res = updateArgsRFunctionCallString(t.src, params) + res;
 
                 res = [
-                    updateArgsRFunctionCallString(params),
+                    updateArgsRFunctionCallString(t.src, params),
                     resetArgsNFunctionCallString(params),
                     res
                 ].filter(s=>s.length>0).join(',\n')
