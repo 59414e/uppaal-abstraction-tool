@@ -285,13 +285,18 @@ export default class CustomListener1 extends yagListener{
 
 		if(ctx.vid){
 			str_arr.push(cb(ctx.vid.text))
-		}else if (n == 0) {
-			str_arr.push(ctx.getText())
-        } else {
-            for (let i = 0; i < n; i++) {
-                str_arr.push(this.renameWithCallbackStr(ctx.getChild(i),cb));
-            }
-        }
+			for (let i = 1; i < n; i++) {
+				str_arr.push(this.renameWithCallbackStr(ctx.getChild(i),cb));
+			}
+		}else{
+			if (n == 0) {
+				str_arr.push(ctx.getText())
+			} else {
+				for (let i = 0; i < n; i++) {
+					str_arr.push(this.renameWithCallbackStr(ctx.getChild(i),cb));
+				}
+			}
+		}
         return (
             cleanupStr(str_arr.join(' '))
         );

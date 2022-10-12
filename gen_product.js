@@ -213,8 +213,14 @@ function renamingPreproc() {
     
     let templatNames = model.getTemplateNames();
 
+    let procList = [];
+
     templatNames.forEach(_t=>{
-        let constDict = getConstVars(model.global, model[_t].declaration);
+        let constDict = getConstVars(model.global + model[_t].declaration[0]);
+
+        // only rename lovalVars OR param
+        let localVars = getAllVars(model[_t].declaration[0]);
+
         if(model[_t].hasOwnProperty("parameter")){
             let match = model[_t].parameter[0].match(tparam_reg);
 
@@ -225,8 +231,10 @@ function renamingPreproc() {
             function myRenameCallback(str){
                 if(str==paramName){
                     return paramPlaceholder();
-                }else{
+                }else if(localVars.indexOf(str)!=-1){
                     return vidPlaceholder(str,constDict);
+                }else{
+                    return str;
                 }
             }
 
@@ -269,6 +277,7 @@ function renamingPreproc() {
             // let agentInstances = [];
             for(let ti=rangeMin; ti<=rangeMax; ti++){
                 let tname = `${_t}_${ti}`;
+                procList.push(tname)
                 let prefix = tname+'_';
                 // replace placeholders
                 let instanceStr = templateStr.replace(vidPlaceholder_reg,prefix).replace(paramPlaceholder_reg, ti);
@@ -287,11 +296,13 @@ function renamingPreproc() {
             function prefixWithTName(str){
                 if(constDict.hasOwnProperty(str)){
                     return str;
+                }else if(localVars.indexOf(str)==-1){
+                    return str;
                 }else{
                     return `${_t}_${str}`;
                 }
             }
-
+            procList.push(_t)
             model[_t].local = postRenameStr(model[_t].local, prefixWithTName, 'translation');
             model[_t].transition.forEach(edge=>{
                 let isSelectVar = {};
@@ -308,7 +319,6 @@ function renamingPreproc() {
                     }).join(',\n')
                 }
 
-                console.log(isSelectVar);
                 function currRenameCallBack(str){
                     if(isSelectVar.hasOwnProperty(str) && isSelectVar.str){
                         return str;
@@ -327,7 +337,7 @@ function renamingPreproc() {
         }
     })
     // parseTreeWalk();
-
+    model.nta.system[0] = `system ${procList.join(', ')};`;
     fs.writeFileSync(CONFIG.OUTPUT.DIR + '/test.xml', model.toString());
 }
 
@@ -341,12 +351,19 @@ function getConstVars(input){
     return myListener._const_dict;
 }
 
+function getAllVars(input){
+    let {tree, myListener} = parseTreeWalk(input, 'translation');
+    // console.log(myListener._vlist.map(x=>x.vid.text));
+    return myListener._vlist.map(x=>x.vid.text);
+}
+
 function renameCallbackGenerator(prefix, sep='_'){
     return (str)=>{`${prefix}${sep}${str}`}
 }
 
 function postRenameStr(input, cb, ruleName = 'expr'){
     let {tree, myListener} = parseTreeWalk(input, ruleName);
+    // console.log(`renaming ${input} to ${myListener.renameWithCallbackStr(tree, cb)}`)
     return myListener.renameWithCallbackStr(tree, cb)
 }
 

@@ -26,7 +26,7 @@ int ballots_received(){&#xD;
 </declaration>
   <template>
     <name>Authority</name>
-    <declaration>int [ 0, 2 ] Authority_dec_recv; int [ 0, 1 ] Authority_pack_sent; int [ 0, N_C ] Authority_vt_recv; int [ 0, 1 ] Authority_sg_recv;</declaration>
+    <declaration>int [ 0, 2 ] Authority_dec_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_pack_sent [ N_V + 1 ]; int [ 0, N_C ] Authority_vt_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_sg_recv [ N_V + 1 ];</declaration>
     <location id="id4" x="288" y="0">
       <name x="256" y="16">coll_vts</name>
     </location>
@@ -42,7 +42,7 @@ int ballots_received(){&#xD;
       <target ref="id4"/>
       <label kind="select" x="256" y="-152">v_i:int[1,N_V]</label>
       <label kind="synchronisation" x="256" y="-136">vote[v_i]?</label>
-      <label kind="assignment" x="256" y="-120">Authority_tally [ ( ( Authority_sh_vt - 1 ) + N_C ) % N_C + 1 ] = Authority_sh_sg &amp;&amp; Authority_sh_vt &gt; 0 ? Authority_tally [ Authority_sh_vt ] + 1 : Authority_tally [ ( ( Authority_sh_vt - 1 ) + N_C ) % N_C + 1 ], Authority_sh_vt = 0, Authority_sh_sg = 0</label>
+      <label kind="assignment" x="256" y="-120">tally [ ( ( sh_vt - 1 ) + N_C ) % N_C + 1 ] = sh_sg &amp;&amp; sh_vt &gt; 0 ? tally [ sh_vt ] + 1 : tally [ ( ( sh_vt - 1 ) + N_C ) % N_C + 1 ], sh_vt = 0, sh_sg = 0</label>
       <nail x="320" y="-64"/>
       <nail x="256" y="-64"/>
     </transition>
@@ -50,8 +50,8 @@ int ballots_received(){&#xD;
       <source ref="id5"/>
       <target ref="id5"/>
       <label kind="select" x="96" y="64">v_i:int[1,N_V]</label>
-      <label kind="guard" x="96" y="80">Authority_dec_recv [ Authority_v_i ] == 2 &amp;&amp; ! Authority_pack_sent [ Authority_v_i ]</label>
-      <label kind="assignment" x="96" y="112">Authority_buff_mail [ Authority_v_i ] = 1, Authority_pack_sent [ Authority_v_i ] += 1</label>
+      <label kind="guard" x="96" y="80">Authority_dec_recv [ v_i ] == 2 &amp;&amp; ! Authority_pack_sent [ v_i ]</label>
+      <label kind="assignment" x="96" y="112">buff_mail [ v_i ] = 1, Authority_pack_sent [ v_i ] += 1</label>
       <nail x="96" y="64"/>
       <nail x="160" y="64"/>
     </transition>
@@ -59,9 +59,9 @@ int ballots_received(){&#xD;
       <source ref="id5"/>
       <target ref="id5"/>
       <label kind="select" x="96" y="-151">v_i:int[1,N_V]</label>
-      <label kind="guard" x="96" y="-136">Authority_dec_recv [ Authority_v_i ] == 1 &amp;&amp; ! Authority_pack_sent [ Authority_v_i ]</label>
+      <label kind="guard" x="96" y="-136">Authority_dec_recv [ v_i ] == 1 &amp;&amp; ! Authority_pack_sent [ v_i ]</label>
       <label kind="synchronisation" x="96" y="-104">coll[v_i]?</label>
-      <label kind="assignment" x="96" y="-88">Authority_pack_sent [ Authority_v_i ] += 1</label>
+      <label kind="assignment" x="96" y="-88">Authority_pack_sent [ v_i ] += 1</label>
       <nail x="160" y="-64"/>
       <nail x="96" y="-64"/>
     </transition>
@@ -78,7 +78,7 @@ int ballots_received(){&#xD;
       <target ref="id6"/>
       <label kind="select" x="-120" y="-128">v_i:int[1,N_V]</label>
       <label kind="synchronisation" x="-120" y="-112">decl[v_i]?</label>
-      <label kind="assignment" x="-120" y="-96">Authority_dec_recv [ Authority_v_i ] = Authority_sh_dec, Authority_sh_dec = 0</label>
+      <label kind="assignment" x="-120" y="-96">Authority_dec_recv [ v_i ] = sh_dec, sh_dec = 0</label>
       <nail x="0" y="-64"/>
       <nail x="-64" y="-64"/>
     </transition>
@@ -104,14 +104,14 @@ int [ 0, 2 ] Voter_1_mem_dec; int [ 0, 1 ] Voter_1_mem_sg; int [ 0, N_C ] Voter_
       <label kind="select" x="128" y="-312">vt:int[0,N_C],
 sg:int[0,1]</label>
       <label kind="synchronisation" x="128" y="-280">vote[id]!</label>
-      <label kind="assignment" x="128" y="-264">Voter_1_sh_vt = Voter_1_vt, Voter_1_sh_sg = Voter_1_sg, Voter_1_mem_sg = Voter_1_sg, Voter_1_mem_vt = Voter_1_vt</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_1_mem_sg = sg, Voter_1_mem_vt = vt</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_1_mem_vt == 2 &amp;&amp; Voter_1_buff_mail [ 1 ]</label>
-      <label kind="assignment" x="-56" y="16">Voter_1_buff_mail [ 1 ] = 0</label>
+      <label kind="guard" x="-56" y="0">Voter_1_mem_vt == 2 &amp;&amp; buff_mail [ 1 ]</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ 1 ] = 0</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
@@ -126,7 +126,7 @@ sg:int[0,1]</label>
       <target ref="id2"/>
       <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
       <label kind="synchronisation" x="-256" y="-248">decl[id]!</label>
-      <label kind="assignment" x="-256" y="-232">Voter_1_mem_dec = Voter_1_inperson, Voter_1_sh_dec = Voter_1_inperson</label>
+      <label kind="assignment" x="-256" y="-232">Voter_1_mem_dec = inperson, sh_dec = inperson</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>
@@ -151,14 +151,14 @@ int [ 0, 2 ] Voter_2_mem_dec; int [ 0, 1 ] Voter_2_mem_sg; int [ 0, N_C ] Voter_
       <label kind="select" x="128" y="-312">vt:int[0,N_C],
 sg:int[0,1]</label>
       <label kind="synchronisation" x="128" y="-280">vote[id]!</label>
-      <label kind="assignment" x="128" y="-264">Voter_2_sh_vt = Voter_2_vt, Voter_2_sh_sg = Voter_2_sg, Voter_2_mem_sg = Voter_2_sg, Voter_2_mem_vt = Voter_2_vt</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_2_mem_sg = sg, Voter_2_mem_vt = vt</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_2_mem_vt == 2 &amp;&amp; Voter_2_buff_mail [ 2 ]</label>
-      <label kind="assignment" x="-56" y="16">Voter_2_buff_mail [ 2 ] = 0</label>
+      <label kind="guard" x="-56" y="0">Voter_2_mem_vt == 2 &amp;&amp; buff_mail [ 2 ]</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ 2 ] = 0</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
@@ -173,7 +173,7 @@ sg:int[0,1]</label>
       <target ref="id2"/>
       <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
       <label kind="synchronisation" x="-256" y="-248">decl[id]!</label>
-      <label kind="assignment" x="-256" y="-232">Voter_2_mem_dec = Voter_2_inperson, Voter_2_sh_dec = Voter_2_inperson</label>
+      <label kind="assignment" x="-256" y="-232">Voter_2_mem_dec = inperson, sh_dec = inperson</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>
@@ -198,14 +198,14 @@ int [ 0, 2 ] Voter_3_mem_dec; int [ 0, 1 ] Voter_3_mem_sg; int [ 0, N_C ] Voter_
       <label kind="select" x="128" y="-312">vt:int[0,N_C],
 sg:int[0,1]</label>
       <label kind="synchronisation" x="128" y="-280">vote[id]!</label>
-      <label kind="assignment" x="128" y="-264">Voter_3_sh_vt = Voter_3_vt, Voter_3_sh_sg = Voter_3_sg, Voter_3_mem_sg = Voter_3_sg, Voter_3_mem_vt = Voter_3_vt</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_3_mem_sg = sg, Voter_3_mem_vt = vt</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_3_mem_vt == 2 &amp;&amp; Voter_3_buff_mail [ 3 ]</label>
-      <label kind="assignment" x="-56" y="16">Voter_3_buff_mail [ 3 ] = 0</label>
+      <label kind="guard" x="-56" y="0">Voter_3_mem_vt == 2 &amp;&amp; buff_mail [ 3 ]</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ 3 ] = 0</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
@@ -220,7 +220,7 @@ sg:int[0,1]</label>
       <target ref="id2"/>
       <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
       <label kind="synchronisation" x="-256" y="-248">decl[id]!</label>
-      <label kind="assignment" x="-256" y="-232">Voter_3_mem_dec = Voter_3_inperson, Voter_3_sh_dec = Voter_3_inperson</label>
+      <label kind="assignment" x="-256" y="-232">Voter_3_mem_dec = inperson, sh_dec = inperson</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>
@@ -245,14 +245,14 @@ int [ 0, 2 ] Voter_4_mem_dec; int [ 0, 1 ] Voter_4_mem_sg; int [ 0, N_C ] Voter_
       <label kind="select" x="128" y="-312">vt:int[0,N_C],
 sg:int[0,1]</label>
       <label kind="synchronisation" x="128" y="-280">vote[id]!</label>
-      <label kind="assignment" x="128" y="-264">Voter_4_sh_vt = Voter_4_vt, Voter_4_sh_sg = Voter_4_sg, Voter_4_mem_sg = Voter_4_sg, Voter_4_mem_vt = Voter_4_vt</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_4_mem_sg = sg, Voter_4_mem_vt = vt</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_4_mem_vt == 2 &amp;&amp; Voter_4_buff_mail [ 4 ]</label>
-      <label kind="assignment" x="-56" y="16">Voter_4_buff_mail [ 4 ] = 0</label>
+      <label kind="guard" x="-56" y="0">Voter_4_mem_vt == 2 &amp;&amp; buff_mail [ 4 ]</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ 4 ] = 0</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
@@ -267,7 +267,7 @@ sg:int[0,1]</label>
       <target ref="id2"/>
       <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
       <label kind="synchronisation" x="-256" y="-248">decl[id]!</label>
-      <label kind="assignment" x="-256" y="-232">Voter_4_mem_dec = Voter_4_inperson, Voter_4_sh_dec = Voter_4_inperson</label>
+      <label kind="assignment" x="-256" y="-232">Voter_4_mem_dec = inperson, sh_dec = inperson</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>
@@ -292,14 +292,14 @@ int [ 0, 2 ] Voter_5_mem_dec; int [ 0, 1 ] Voter_5_mem_sg; int [ 0, N_C ] Voter_
       <label kind="select" x="128" y="-312">vt:int[0,N_C],
 sg:int[0,1]</label>
       <label kind="synchronisation" x="128" y="-280">vote[id]!</label>
-      <label kind="assignment" x="128" y="-264">Voter_5_sh_vt = Voter_5_vt, Voter_5_sh_sg = Voter_5_sg, Voter_5_mem_sg = Voter_5_sg, Voter_5_mem_vt = Voter_5_vt</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_5_mem_sg = sg, Voter_5_mem_vt = vt</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_5_mem_vt == 2 &amp;&amp; Voter_5_buff_mail [ 5 ]</label>
-      <label kind="assignment" x="-56" y="16">Voter_5_buff_mail [ 5 ] = 0</label>
+      <label kind="guard" x="-56" y="0">Voter_5_mem_vt == 2 &amp;&amp; buff_mail [ 5 ]</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ 5 ] = 0</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
@@ -314,14 +314,11 @@ sg:int[0,1]</label>
       <target ref="id2"/>
       <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
       <label kind="synchronisation" x="-256" y="-248">decl[id]!</label>
-      <label kind="assignment" x="-256" y="-232">Voter_5_mem_dec = Voter_5_inperson, Voter_5_sh_dec = Voter_5_inperson</label>
+      <label kind="assignment" x="-256" y="-232">Voter_5_mem_dec = inperson, sh_dec = inperson</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>
-  <system>// Place template instantiations here.&#xD;
-&#xD;
-// List one or more processes to be composed into a system.&#xD;
-system Voter, Authority;</system>
+  <system>system Voter_1,Voter_2,Voter_3,Voter_4,Voter_5,Authority;</system>
   <queries>
     <query>
       <formula>A[]1==1</formula>
