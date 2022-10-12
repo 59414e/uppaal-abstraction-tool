@@ -113,16 +113,16 @@ let abstractionParams = {
         return Object.keys(this.val0)
     },
     argsN: [
-        {
-            name: "validVote",      // for now argsN are reset when argsR are assumed and eval'd when those are reset
-            val0: 0,
-            f: `mem_sg && mem_vt`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
-        },
-        {
-            name: "invalidVote",
-            val0: 1,
-            f: `!(mem_sg && mem_vt)`
-        },
+        // {
+        //     name: "validVote",      // for now argsN are reset when argsR are assumed and eval'd when those are reset
+        //     val0: 0,
+        //     f: `mem_sg && mem_vt`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
+        // },
+        // {
+        //     name: "invalidVote",
+        //     val0: 1,
+        //     f: `!(mem_sg && mem_vt)`
+        // },
     ],
     // get d from restrMapping
     d: {
@@ -133,4 +133,4 @@ let abstractionParams = {
     },
 }
 
-generateAbstractModel(inputStr, abstractionParams)
+let abstrModel = generateAbstractModel(inputStr, abstractionParams);

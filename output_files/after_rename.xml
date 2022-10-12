@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
         <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'><nta>
   <declaration>// Place global declarations here.&#xD;
-const int N_V = 1;&#xD;
+const int N_V = 4;&#xD;
 const int N_C = 2;&#xD;
 &#xD;
 chan decl[N_V+1];&#xD;
@@ -110,7 +110,7 @@ sg:int[0,1]</label>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_1_mem_vt == 2 &amp;&amp; buff_mail [ Voter_1_id ] == 1</label>
+      <label kind="guard" x="-56" y="0">Voter_1_mem_dec == 2 &amp;&amp; buff_mail [ Voter_1_id ] == 1</label>
       <label kind="assignment" x="-56" y="16">buff_mail [ Voter_1_id ] = 0</label>
       <nail x="-32" y="0"/>
     </transition>
@@ -130,7 +130,148 @@ sg:int[0,1]</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>
-  <system>system Voter_1, Authority;</system>
+  <template>
+    <name>Voter_2</name>
+    <declaration>const int Voter_2_id = 2;
+int [ 0, 2 ] Voter_2_mem_dec; int [ 0, 1 ] Voter_2_mem_sg; int [ 0, N_C ] Voter_2_mem_vt;</declaration>
+    <location id="id0" x="64" y="-96"/>
+    <location id="id1" x="256" y="-96">
+      <name x="246" y="-85">end</name>
+    </location>
+    <location id="id2" x="-128" y="-96">
+      <name x="-152" y="-80">waits</name>
+    </location>
+    <location id="id3" x="-320" y="-96">
+      <name x="-336" y="-80">idle</name>
+    </location>
+    <init ref="id3"/>
+    <transition>
+      <source ref="id0"/>
+      <target ref="id1"/>
+      <label kind="select" x="128" y="-312">vt:int[0,N_C],
+sg:int[0,1]</label>
+      <label kind="synchronisation" x="128" y="-280">vote[Voter_2_id]!</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_2_mem_sg = sg, Voter_2_mem_vt = vt</label>
+      <nail x="160" y="-192"/>
+    </transition>
+    <transition>
+      <source ref="id2"/>
+      <target ref="id0"/>
+      <label kind="guard" x="-56" y="0">Voter_2_mem_dec == 2 &amp;&amp; buff_mail [ Voter_2_id ] == 1</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ Voter_2_id ] = 0</label>
+      <nail x="-32" y="0"/>
+    </transition>
+    <transition>
+      <source ref="id2"/>
+      <target ref="id0"/>
+      <label kind="guard" x="-56" y="-232">Voter_2_mem_dec == 1</label>
+      <label kind="synchronisation" x="-56" y="-216">coll[Voter_2_id]!</label>
+      <nail x="-32" y="-192"/>
+    </transition>
+    <transition>
+      <source ref="id3"/>
+      <target ref="id2"/>
+      <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
+      <label kind="synchronisation" x="-256" y="-248">decl[Voter_2_id]!</label>
+      <label kind="assignment" x="-256" y="-232">Voter_2_mem_dec = inperson, sh_dec = inperson</label>
+      <nail x="-224" y="-192"/>
+    </transition>
+  </template>
+  <template>
+    <name>Voter_3</name>
+    <declaration>const int Voter_3_id = 3;
+int [ 0, 2 ] Voter_3_mem_dec; int [ 0, 1 ] Voter_3_mem_sg; int [ 0, N_C ] Voter_3_mem_vt;</declaration>
+    <location id="id0" x="64" y="-96"/>
+    <location id="id1" x="256" y="-96">
+      <name x="246" y="-85">end</name>
+    </location>
+    <location id="id2" x="-128" y="-96">
+      <name x="-152" y="-80">waits</name>
+    </location>
+    <location id="id3" x="-320" y="-96">
+      <name x="-336" y="-80">idle</name>
+    </location>
+    <init ref="id3"/>
+    <transition>
+      <source ref="id0"/>
+      <target ref="id1"/>
+      <label kind="select" x="128" y="-312">vt:int[0,N_C],
+sg:int[0,1]</label>
+      <label kind="synchronisation" x="128" y="-280">vote[Voter_3_id]!</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_3_mem_sg = sg, Voter_3_mem_vt = vt</label>
+      <nail x="160" y="-192"/>
+    </transition>
+    <transition>
+      <source ref="id2"/>
+      <target ref="id0"/>
+      <label kind="guard" x="-56" y="0">Voter_3_mem_dec == 2 &amp;&amp; buff_mail [ Voter_3_id ] == 1</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ Voter_3_id ] = 0</label>
+      <nail x="-32" y="0"/>
+    </transition>
+    <transition>
+      <source ref="id2"/>
+      <target ref="id0"/>
+      <label kind="guard" x="-56" y="-232">Voter_3_mem_dec == 1</label>
+      <label kind="synchronisation" x="-56" y="-216">coll[Voter_3_id]!</label>
+      <nail x="-32" y="-192"/>
+    </transition>
+    <transition>
+      <source ref="id3"/>
+      <target ref="id2"/>
+      <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
+      <label kind="synchronisation" x="-256" y="-248">decl[Voter_3_id]!</label>
+      <label kind="assignment" x="-256" y="-232">Voter_3_mem_dec = inperson, sh_dec = inperson</label>
+      <nail x="-224" y="-192"/>
+    </transition>
+  </template>
+  <template>
+    <name>Voter_4</name>
+    <declaration>const int Voter_4_id = 4;
+int [ 0, 2 ] Voter_4_mem_dec; int [ 0, 1 ] Voter_4_mem_sg; int [ 0, N_C ] Voter_4_mem_vt;</declaration>
+    <location id="id0" x="64" y="-96"/>
+    <location id="id1" x="256" y="-96">
+      <name x="246" y="-85">end</name>
+    </location>
+    <location id="id2" x="-128" y="-96">
+      <name x="-152" y="-80">waits</name>
+    </location>
+    <location id="id3" x="-320" y="-96">
+      <name x="-336" y="-80">idle</name>
+    </location>
+    <init ref="id3"/>
+    <transition>
+      <source ref="id0"/>
+      <target ref="id1"/>
+      <label kind="select" x="128" y="-312">vt:int[0,N_C],
+sg:int[0,1]</label>
+      <label kind="synchronisation" x="128" y="-280">vote[Voter_4_id]!</label>
+      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_4_mem_sg = sg, Voter_4_mem_vt = vt</label>
+      <nail x="160" y="-192"/>
+    </transition>
+    <transition>
+      <source ref="id2"/>
+      <target ref="id0"/>
+      <label kind="guard" x="-56" y="0">Voter_4_mem_dec == 2 &amp;&amp; buff_mail [ Voter_4_id ] == 1</label>
+      <label kind="assignment" x="-56" y="16">buff_mail [ Voter_4_id ] = 0</label>
+      <nail x="-32" y="0"/>
+    </transition>
+    <transition>
+      <source ref="id2"/>
+      <target ref="id0"/>
+      <label kind="guard" x="-56" y="-232">Voter_4_mem_dec == 1</label>
+      <label kind="synchronisation" x="-56" y="-216">coll[Voter_4_id]!</label>
+      <nail x="-32" y="-192"/>
+    </transition>
+    <transition>
+      <source ref="id3"/>
+      <target ref="id2"/>
+      <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
+      <label kind="synchronisation" x="-256" y="-248">decl[Voter_4_id]!</label>
+      <label kind="assignment" x="-256" y="-232">Voter_4_mem_dec = inperson, sh_dec = inperson</label>
+      <nail x="-224" y="-192"/>
+    </transition>
+  </template>
+  <system>system Voter_1, Voter_2, Voter_3, Voter_4, Authority;</system>
   <queries>
     <query>
       <formula>A[]1==1</formula>
