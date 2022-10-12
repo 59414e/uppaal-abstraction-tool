@@ -1,5 +1,7 @@
 import * as path from 'path';
 
+
+
 const CONFIG = {
     INPUT: {
         DIR: "./sample_input",
@@ -24,9 +26,24 @@ const CONFIG = {
         return path.join(this.INPUT.DIR, this.INPUT.SAMPLE);
     },
     
-    LDE_namePrefix: "__d_vals", // local domain value (one per (ArgsR,Location) elem),
+    // LDE_namePrefix: "__d_vals", // local domain value (one per (ArgsR,Location) elem),
 
-    locationIdSeparator: '__',
+    // locationIdSeparator: '__',
+
+    
+    preprocessModel:{
+        productName: "ExtendedMAS",
+        saveIntermediateModel: true, 
+        locationIdSeparator: '__',
+    },
+    approximateDomain:{
+        int16Max: 32767
+    },
+    generateAbstraction:{
+        ld_elem_namePrefix: "__d_vals", // local domain value (one per (ArgsR,Location) elem),
+    }
+
+    // 
 }
 
 export default CONFIG;

@@ -1,80 +1,74 @@
+// ============================================================
 // built-in
 import * as fs from 'fs';
-import * as path from 'path';
 
 // third-party
-import * as xml2js from 'xml2js';
-
 import antlr4 from 'antlr4';
-import yagLexer from './YetAnotherGrammar/yagLexer.js';
-import yagParser from './YetAnotherGrammar/yagParser.js';
-import yagListener from './YetAnotherGrammar/yagListener.js';
+import yagLexer from '../Parser/YetAnotherGrammar/yagLexer.js';
+import yagParser from '../Parser/YetAnotherGrammar/yagParser.js';
 
 // custom libs/files
-import CONFIG from './config.js';
-import UppaalXML from './uppaalxml.js';
-import CustomListener from './customListener.js';
-
-
+import CONFIG from '../config.js';
+import UppaalXML from '../Parser/uppaalxml.js';
+import CustomListener from '../Parser/customListener.js';
 // ============================================================
 
 
-// read XML for the concrete model
-const xmlInputString = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
-// get local domain from file
-const localDomain = JSON.parse(fs.readFileSync(CONFIG.pathToInputMapping));
-// fs.writeFileSync(CONFIG.pathToOutputModel, xmlInputString);
+function generateAbstractModel(inputString, abstractionParams){
+    // read XML for the concrete model
+    // const xmlInputString = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
+    // get local domain from file
+    // const localDomain = JSON.parse(fs.readFileSync(CONFIG.pathToInputMapping));
+    // fs.writeFileSync(CONFIG.pathToOutputModel, xmlInputString);
+    let model = new UppaalXML(inputString);
 
+    model.fillMissingLocationNames('Voter');
 
-// ============================================================
+    const myHash = `_` + Date.now().toString(36); // a rand-ish string (might start with a number!!!)
+    abstractionParams.myHash = myHash;
+    // if scope given by names - convert to ids using loc2id map
+    // const abstractionParams = {
+    //     template: "Voter",
+    //     scope: "*", 
+    //     val0: {
+    //         mem_sg: 0,
+    //         mem_vt: 0
+    //     },
+    //     get argsR() {
+    //         return Object.keys(this.val0)
+    //     },
+    //     argsN: [
+    //         {
+    //             name: "validVote",      // for now argsN are reset when argsR are assumed and eval'd when those are reset
+    //             val0: 0,
+    //             f: `mem_sg && mem_vt`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
+    //         },
+    //         {
+    //             name: "invalidVote",
+    //             val0: 1,
+    //             f: `!(mem_sg && mem_vt)`
+    //         },
+    //     ],
+    //     d: {
+    //         "id3": [[0,0]],
+    //         "id2": [[0,0]],
+    //         "id0": [[0,0]],
+    //         "id1": [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]
+    //     },
+    //     myHash: myHash
+    // }
 
-let model = new UppaalXML(xmlInputString);
+    // strip unreachable locations from the scope
+    abstractionParams.scope = recomputeScope(model, abstractionParams);
+    // for each pair of (mapping_function, scope) perform the abstraction
+    bar(model, abstractionParams);
 
-model.fillMissingLocationNames('Voter');
-
-const myHash = `_` + Date.now().toString(36); // a rand-ish string (might start with a number!!!)
-
-// if scope given by names - convert to ids using loc2id map
-const abstractionParams = {
-    template: "Voter",
-    scope: "*", 
-    val0: {
-        mem_sg: 0,
-        mem_vt: 0
-    },
-    get argsR() {
-        return Object.keys(this.val0)
-    },
-    argsN: [
-        {
-            name: "validVote",      // for now argsN are reset when argsR are assumed and eval'd when those are reset
-            val0: 0,
-            f: `mem_sg && mem_vt`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
-        },
-        {
-            name: "invalidVote",
-            val0: 1,
-            f: `!(mem_sg && mem_vt)`
-        },
-    ],
-    d: {
-        "id3": [[0,0]],
-        "id2": [[0,0]],
-        "id0": [[0,0]],
-        "id1": [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]
-    },
-    myHash: myHash
+    // finally save the abstract model into XML file
+    fs.writeFileSync(CONFIG.pathToOutputModel, model.toString());
+    return model;
 }
 
-// strip unreachable locations from the scope
-abstractionParams.scope = recomputeScope(model, abstractionParams);
 
-
-// for each pair of (mapping_function, scope) perform the abstraction
-bar(model, abstractionParams);
-
-// finally save the abstract model into XML file
-fs.writeFileSync(CONFIG.pathToOutputModel, model.toString());
 
 
 
@@ -82,7 +76,7 @@ fs.writeFileSync(CONFIG.pathToOutputModel, model.toString());
 
 function ldeVarName(locationId, myHash){
     // return `${CONFIG.LDE_namePrefix}_at_${locationId}`;
-    return `${CONFIG.LDE_namePrefix}_at_${locationId}_${myHash}`;
+    return `${CONFIG.generateAbstraction.ld_elem_namePrefix}_at_${locationId}_${myHash}`;
 }
 
 function ldeToStringArgs(locationId, myHash, argsR){
@@ -108,7 +102,6 @@ function abstractFunCallFactory(locationId, myHash, argsR){
 }
 
 
-
 // todo: extract bracket change into a function + declare an enum for the bracket types (i.e. square, curly, round)
 function ldeConstVarDecString(params){
     let str = '';
@@ -129,7 +122,7 @@ function recomputeScope(model, params){
 
 
 function bar(model, params) {
-    let d = params.d; // local domain map
+    // let d = params.d; // local domain map
     // local domain const vars
     model.global = ldeConstVarDecString(params) + model.global;
 
@@ -340,3 +333,5 @@ function generateAbstractLabelString(input, params){
 
 
 
+export {generateAbstractModel};
+export default {};

@@ -1,11 +1,6 @@
-// build-in libs
-
+// ======================================================
 // antlr4
 import yagListener from "./YetAnotherGrammar/yagListener.js";
-
-// custom libs/files
-import CONFIG from "./config.js";
-
 // ======================================================
 
 export default class CustomListener1 extends yagListener{

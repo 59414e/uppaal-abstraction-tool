@@ -22,55 +22,33 @@ Notes:
 
 // built-in
 import * as fs from 'fs';
-import * as path from 'path';
 
 // third-party
-import * as xml2js from 'xml2js';
-
 import antlr4 from 'antlr4';
-import yagLexer from './YetAnotherGrammar/yagLexer.js';
-import yagParser from './YetAnotherGrammar/yagParser.js';
-import yagListener from './YetAnotherGrammar/yagListener.js';
+import yagLexer from '../Parser/YetAnotherGrammar/yagLexer.js';
+import yagParser from '../Parser/YetAnotherGrammar/yagParser.js';
 
 // custom libs/files
-import CONFIG from './config.js';
-import UppaalXML from './uppaalxml.js';
-import CustomListener from './customListener1.js';
-import { dir } from 'console';
-import { config } from 'process';
-
+import CONFIG from '../config.js';
+import UppaalXML from '../Parser/uppaalxml.js';
+import CustomListener from '../Parser/customListener1.js';
 // ============================================================
-// todo: in renaming add the filter over global variables
-// todo: partition script and run options/params
 
 function generateProduct(inputString) {
+    const LID_SEP = CONFIG.preprocessModel.locationIdSeparator; 
+    const SINGLETON_NAME = CONFIG.preprocessModel.productName;
+    const SAVE_TO_FILE = CONFIG.preprocessModel.saveIntermediateModel;
+
     // read XML for the concrete model
-    // const xmlInputString = fs.readFileSync(CONFIG.pathToInputModel.replace('.xml', '_mas.xml'), "utf8");
-    const xmlInputString = inputString;
+    let model = new UppaalXML(inputString);
+    // initialize base model with single process/template
+    let result = new UppaalXML(generateSingletonModelXML(SINGLETON_NAME));
 
-    const xmlInputString2 = fs.readFileSync(CONFIG.pathToInputSample, "utf8");
-
-    let model = new UppaalXML(xmlInputString);
-    let result = new UppaalXML(xmlInputString2);
-
-    const LID_SEP = CONFIG.locationIdSeparator; // agent's location separator
-
-    // do the prepocessing of the input model to ensure no errors/bugs arise
-    // 1) alpha-renaming of the variables
-    // 2) prepend the location ids wiht the agent instance name for readability in the ext. location space
-    // 3) validate the input model for the special symbols in the location name tags (e.g., commas)
-
-    // load an empty model and append the locations there
-    // ...
 
     let numberOfTemplates = model.nta.template.length;
-
     let numberOfAgents = numberOfTemplates;
-
-    // 
+    
     let sync_edges_queue = {};
-
-    // 
     let xlocation_ids = [];
 
     // create an initial location
@@ -89,7 +67,7 @@ function generateProduct(inputString) {
             let local_edges = model.nta.template[i].transition.filter(t => t.src == curr_loc[i]);
             for (let j = 0; j < local_edges.length; j++) {
                 let edge = local_edges[j];
-                // todo: check if hte edge has a synchronisation label
+                // todo: check if the edge has a synchronisation label
                 if (edge['synchronisation']) {
                     // todo: strip whitespace
                     let chan = edge['synchronisation'].slice(0, -1);
@@ -105,7 +83,6 @@ function generateProduct(inputString) {
                         chan = match[1];
                         cond = match[2].split('][').map(s => s.replace(/[\[\]]/gm, ''));
                     }
-
 
                     if (!sync_edges_queue[chan]) {
                         sync_edges_queue[chan] = {
@@ -166,183 +143,173 @@ function generateProduct(inputString) {
     }
 
     // translate the results into uppaalXML
-    result.flushTemplateLocations("ExtendedMAS");
+    result.flushTemplateLocations(SINGLETON_NAME);
     xlocation_ids.forEach(loc => {
-        result.addLocationToTemplate("ExtendedMAS", loc)
+        result.addLocationToTemplate(SINGLETON_NAME, loc)
     })
-    result.setInitLocationToTemplate("ExtendedMAS", xlocation_0.join(LID_SEP))
+    result.setInitLocationToTemplate(SINGLETON_NAME, xlocation_0.join(LID_SEP))
 
     xedges.forEach(edge => {
-        result.importEdgeToTemplate("ExtendedMAS", edge)
+        result.importEdgeToTemplate(SINGLETON_NAME, edge)
     })
 
     // merge declarations
     result.global = model.global;
-    result["ExtendedMAS"].local = model.nta.template.map(_t => `// From ${_t?.name[0]}:\n` + _t.declaration).join('\n');
+    result[SINGLETON_NAME].local = model.nta.template.map(_t => `// From ${_t?.name[0]}:\n` + _t.declaration).join('\n');
+
+    if(SAVE_TO_FILE){
+        fs.writeFileSync(CONFIG.OUTPUT.DIR + '/after_product.xml', result.toString());
+    }
 
     return result;
 }
 
-let inputStr = fs.readFileSync(CONFIG.pathToInputModel.replace('.xml', '_mas.xml'), "utf8");
-let extModel = generateProduct(inputStr);
-fs.writeFileSync(CONFIG.OUTPUT.DIR + '/ext_model.xml', extModel.toString());
 
-const myHash = `_` + Date.now().toString(36); // a rand-ish string (might start with a number!!!)
 
-function renamingPreproc() {
-    const xmlInputString = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
+function renamingPreproc(inputString) {    
+    const SAVE_TO_FILE = CONFIG.preprocessModel.saveIntermediateModel || false;
+    const MY_HASH = `_` + Date.now().toString(36); // a rand-ish string (might start with a number!!!)
     
-    function paramPlaceholder(){
-        return '#'+myHash+'#';
-    }
-    function vidPlaceholder(str, dict={}){
-        if(dict.hasOwnProperty(str)){
-            return str;
-        }else{
-            return '@'+myHash+'@'+str;
-        }
+    // function tparamPlaceholder(){
+    //     return '#'+MY_HASH+'#';
+    // }
+    function vidPlaceholder(str){
+        // if(dict.hasOwnProperty(str)){
+        //     return str;
+        // }else{
+        return '@'+MY_HASH+'@'+str;
+        // }
     }
 
-    const vidPlaceholder_reg = new RegExp(vidPlaceholder(''), 'gm')
-    const paramPlaceholder_reg = new RegExp(paramPlaceholder(''), 'gm')
-    const tparam_reg = /[^\[]*\[([^,]+),([^,]+)\]\s*([^\s]+)/m;
-    const selectRange_reg =  /[^\[]*\[([^,]+),([^,]+)\]/m;
-
-
-    let model = new UppaalXML(xmlInputString);
+    const VID_PLACEHOLDER_REG = new RegExp(vidPlaceholder(''), 'gm');
+    // const TPARAM_PLACEHOLDER_REG = new RegExp(tparamPlaceholder(''), 'gm');
     
-    let templatNames = model.getTemplateNames();
+    const TPARAM_REG = /[^\[]*\[([^,]+),([^,]+)\]\s*([^\s]+)/m; // pattern: `int[<1>,<2>] <3>`
+    const SELECT_RANGE_REG =  /[^\[]*\[([^,]+),([^,]+)\]/m;      // pattern: `selector:int[<1>,<2>]`
 
-    let procList = [];
 
-    templatNames.forEach(_t=>{
-        let constDict = getConstVars(model.global + model[_t].declaration[0]);
+    let model = new UppaalXML(inputString);
 
-        // only rename lovalVars OR param
+    let templateNames = model.getTemplateNames();
+    let procNameList = [];
+
+    let globalConstDict = getConstVars(model.global);
+
+    templateNames.forEach(_t=>{
+        let constDict = {
+            ...globalConstDict,
+            ...getConstVars(model[_t].declaration[0])
+        };
+
+        // rename candidates are localVars and template param
         let localVars = getAllVars(model[_t].declaration[0]);
 
-        if(model[_t].hasOwnProperty("parameter")){
-            let match = model[_t].parameter[0].match(tparam_reg);
+        let edgeLabelRenamingFunction = (cb)=>{
+            return (edge)=>{
+                let isSelectVar = {};
+                if(edge["select"]){
+                    edge["select"] = model.getSelectLabelVars(edge.select).map(x=>{
+                        let m = x.type.match(SELECT_RANGE_REG);
+                        let intFrom = (Number.isNaN(Number(m[1]))) ? cb(m[1],constDict) : Number(m[1]);
+                        let intTo = (Number.isNaN(Number(m[2]))) ? cb( m[2],constDict) : Number(m[2]);
+                        isSelectVar[x.name] = true;
+                        return `${x.name}:int[${intFrom},${intTo}]`;
+                    }).join(',\n')
+                }
+                function currRenameCallBack(str){
+                    if(isSelectVar.hasOwnProperty(str)){
+                        return str;
+                    }else{
+                        return cb(str);
+                    }
+                }
 
-            let rangeMin = numberOrDictEntry(match[1],constDict);
-            let rangeMax = numberOrDictEntry(match[2],constDict);
-            let paramName = match[3];
+                if(edge["synchronisation"]){
+                    // let ch = edge["synchronisation"].slice(0,-1)
+                    // let sym = edge["synchronisation"].slice(-1);
+                    
+                    let m = edge["synchronisation"].match(/([^\[]*)\[([^\]]*)\](.)/)
+                    if(m && m[2]){
+                        let ch = m[1];
+                        let dim = m[2];
+                        let symb = m[3];
+
+                        let str = postRenameStr(dim, currRenameCallBack, 'expr');
+                        
+                        edge["synchronisation"] = `${ch}[${str}]${symb}`;
+                    }
+                }
+
+                ['assignment', 'guard'].forEach(kind=>{
+                    if(edge[kind]){
+                        edge[kind] = postRenameStr(edge[kind]+';', currRenameCallBack, 'statement').slice(0,-1)
+                    }
+                })
+            }
+        }
+
+        // fill parameterized template with placeholders and then parse as string, substituting those with tname and tparam values
+        if(model[_t].hasOwnProperty("parameter")){
+            let tparamMatch = model[_t].parameter[0].match(TPARAM_REG);
+
+            let tparamRangeMin = retrieveNumberOrDictEntry(tparamMatch[1],constDict);
+            let tparamRangeMax = retrieveNumberOrDictEntry(tparamMatch[2],constDict);
+            let paramName = tparamMatch[3];
+
             
+            // only rename local or param
             function myRenameCallback(str){
-                if(str==paramName){
-                    return paramPlaceholder();
-                }else if(localVars.indexOf(str)!=-1){
-                    return vidPlaceholder(str,constDict);
+                if(localVars.hasOwnProperty(str) || str==paramName){
+                    return vidPlaceholder(str);
                 }else{
                     return str;
                 }
             }
 
             model[_t].local = postRenameStr(model[_t].local, myRenameCallback, 'translation');
-            model[_t].transition.forEach(edge=>{
-                // if sync has PARAM - will refer to a const appended to a local declaration list (note that select lhs remains unchanged, as those are bound)
-                let isSelectVar = {};
-                if(edge["select"]){
-                    edge["select"] = model.getSelectLabelVars(edge.select).map(x=>{
-                        let m = x.type.match(selectRange_reg);
-                        let intFrom = (Number.isNaN(Number(m[1]))) ? vidPlaceholder(m[1],constDict) : Number(m[1]);
-                        let intTo = (Number.isNaN(Number(m[2]))) ? vidPlaceholder( m[2],constDict) : Number(m[2]);
-
-                        isSelectVar[x.name] = true;
-                        return `${x.name}:int[${intFrom},${intTo}]`;
-                    }).join(',\n')
-                }
-
-                function currRenameCallBack(str){
-                    if(isSelectVar.hasOwnProperty(str) && isSelectVar.str){
-                        return str;
-                    }else{
-                        return myRenameCallback(str);
-                    }
-                }
-
-                ['assignment', 'guard'].forEach(kind=>{
-                    if(edge[kind]){
-                        edge[kind] = postRenameStr(edge[kind]+';', currRenameCallBack, 'statement').slice(0,-1)
-                    }
-                })
-            })
+            model[_t].transition.forEach(edgeLabelRenamingFunction(myRenameCallback))
+            
             delete model[_t].parameter;
             let templateStr = JSON.stringify(model[_t]);
             
             // substitute curr template with an array of instances
             // delete model[_t];
             model.nta.template.splice(model.indexOfTemplate(_t),1)
-            
             // let agentInstances = [];
-            for(let ti=rangeMin; ti<=rangeMax; ti++){
+            for(let ti=tparamRangeMin; ti<=tparamRangeMax; ti++){
                 let tname = `${_t}_${ti}`;
-                procList.push(tname)
+                procNameList.push(tname)
                 let prefix = tname+'_';
                 // replace placeholders
-                let instanceStr = templateStr.replace(vidPlaceholder_reg,prefix).replace(paramPlaceholder_reg, ti);
+                let instanceStr = templateStr.replace(VID_PLACEHOLDER_REG,prefix);
                 let tcurr = JSON.parse(instanceStr);
                 // delete tcurr.name;
                 tcurr.name = [tname];
-                tcurr.declaration[0] = `const int ${paramName} = ${ti};\n` + tcurr.declaration[0];
+                tcurr.declaration[0] = `const int ${tname}_${paramName} = ${ti};\n` + tcurr.declaration[0];
                 model.nta.template.push(tcurr);
-                // do prefix renaming + substitution of paramName with paramValue ti
             }
-
-            // let tcopy = JSON.parse(JSON.stringify(model[_t]));
-            // model.nta.template.push(tcopy)
         }else{
             // do renaming for all local declarations and all local edges
             function prefixWithTName(str){
-                if(constDict.hasOwnProperty(str)){
-                    return str;
-                }else if(localVars.indexOf(str)==-1){
-                    return str;
-                }else{
+                if(localVars.hasOwnProperty(str)){
                     return `${_t}_${str}`;
+                }else{
+                    return str;
                 }
             }
-            procList.push(_t)
+            procNameList.push(_t)
             model[_t].local = postRenameStr(model[_t].local, prefixWithTName, 'translation');
-            model[_t].transition.forEach(edge=>{
-                let isSelectVar = {};
-                // by assumption sync array identifiers are either from select or from param (here no param), thus no need to be parsed
-                if(edge["select"]){
-                    edge["select"] = model.getSelectLabelVars(edge.select).map(x=>{
-                        let m = x.type.match(selectRange_reg);
-
-                        let intFrom = (Number.isNaN(Number(m[1]))) ? prefixWithTName(m[1]) : Number(m[1]);
-                        let intTo = (Number.isNaN(Number(m[2]))) ? prefixWithTName(m[2]) : Number(m[2]);
-
-                        isSelectVar[x.name] = true;
-                        return `${x.name}:int[${intFrom},${intTo}]`;
-                    }).join(',\n')
-                }
-
-                function currRenameCallBack(str){
-                    if(isSelectVar.hasOwnProperty(str) && isSelectVar.str){
-                        return str;
-                    }else{
-                        return prefixWithTName(str);
-                    }
-                }
-
-
-                ['assignment', 'guard'].forEach(kind=>{
-                    if(edge[kind]){
-                        edge[kind] = postRenameStr(edge[kind]+';', currRenameCallBack, 'statement').slice(0,-1)
-                    }
-                })
-            })
+            model[_t].transition.forEach(edgeLabelRenamingFunction(prefixWithTName))
         }
     })
-    // parseTreeWalk();
-    model.nta.system[0] = `system ${procList.join(', ')};`;
-    fs.writeFileSync(CONFIG.OUTPUT.DIR + '/test.xml', model.toString());
+    model.nta.system[0] = `system ${procNameList.join(', ')};`;
+
+    if(SAVE_TO_FILE){
+        fs.writeFileSync(CONFIG.OUTPUT.DIR + '/after_rename.xml', model.toString());
+    }
+    
+    return model;
 }
-
-renamingPreproc()
-
 
 
 
@@ -354,11 +321,7 @@ function getConstVars(input){
 function getAllVars(input){
     let {tree, myListener} = parseTreeWalk(input, 'translation');
     // console.log(myListener._vlist.map(x=>x.vid.text));
-    return myListener._vlist.map(x=>x.vid.text);
-}
-
-function renameCallbackGenerator(prefix, sep='_'){
-    return (str)=>{`${prefix}${sep}${str}`}
+    return myListener._vlist.reduce((acc,x)=>(acc[x.vid.text]=true,acc),{});
 }
 
 function postRenameStr(input, cb, ruleName = 'expr'){
@@ -382,8 +345,7 @@ function parseTreeWalk(input, ruleName = 'expr'){
     }
 }
 
-
-function numberOrDictEntry(val, dict){
+function retrieveNumberOrDictEntry(val, dict){
     if(Number.isNaN(Number(val))){
         if(dict?.hasOwnProperty(val)){
             return dict[val];
@@ -394,3 +356,34 @@ function numberOrDictEntry(val, dict){
         return Number(val)
     }
 }
+
+
+function generateSingletonModelXML(processName = SINGLETON_NAME){
+    return `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+    <declaration>// Place global declarations here.</declaration>
+    <template>
+        <name x="5" y="5">${processName}</name>
+        <declaration>// Place local declarations here.</declaration>
+        <location id="id0" x="0" y="0">
+        </location>
+        <init ref="id0"/>
+    </template>
+    <system>// Place template instantiations here.
+Process = ${processName}();
+// List one or more processes to be composed into a system.
+system Process;
+    </system>
+    <queries>
+        <query>
+            <formula></formula>
+            <comment></comment>
+        </query>
+    </queries>
+</nta>`;
+}
+
+
+export {renamingPreproc, generateProduct, getConstVars};
+export default {};
