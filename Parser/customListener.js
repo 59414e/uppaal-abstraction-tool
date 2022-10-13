@@ -187,6 +187,7 @@ export default class CustomListener extends yagListener{
         if(ctx.vid){
             ctx._aText = ctx.vid.text;
             if(this.params.argsR.indexOf(ctx._aText) !== -1){
+                // if(this.params.abstractVarNameOf) // YK: double check if needed
                 ctx._aText = this.params.abstractVarNameOf(ctx._aText);
             }
         }

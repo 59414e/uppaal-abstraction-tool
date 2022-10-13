@@ -1,0 +1,7 @@
+Do 13 Okt 2022 18:34:06
+./output_files/a1_t.xml:/nta/template[1]/transition[1]/label[3]:2: [warning] Expression does not have any effect.
+./output_files/a1_t.xml:/nta/template[1]/transition[1]/label[3]:7: [warning] Expression does not have any effect.
+./output_files/a1_t.xml:/nta/template[1]/transition[2]/label[3]:2: [warning] Expression does not have any effect.
+./output_files/a1_t.xml:/nta/template[1]/transition[2]/label[3]:4: [warning] Expression does not have any effect.
+./output_files/a1_t.xml:/nta/template[1]/transition[4]/label[3]:2: [warning] Expression does not have any effect.
+./output_files/a1_t.xml:/nta/template[1]/transition[4]/label[3]:5: [warning] Expression does not have any effect.

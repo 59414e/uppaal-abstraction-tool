@@ -160,6 +160,7 @@ function generateProduct(inputString) {
     if(SAVE_TO_FILE){
         fs.writeFileSync(CONFIG.OUTPUT.DIR + '/after_product.xml', result.toString());
     }
+    console.log("App: gen_product finished");
 
     return result;
 }
@@ -271,6 +272,8 @@ function renamingPreproc(inputString) {
             
             delete model[_t].parameter;
             let templateStr = JSON.stringify(model[_t]);
+
+            // console.log(templateStr);
             
             // substitute curr template with an array of instances
             // delete model[_t];
@@ -307,7 +310,7 @@ function renamingPreproc(inputString) {
     if(SAVE_TO_FILE){
         fs.writeFileSync(CONFIG.OUTPUT.DIR + '/after_rename.xml', model.toString());
     }
-    
+    console.log("App: renaming finished");
     return model;
 }
 

@@ -60,6 +60,23 @@ function approximateLocalDomain(inputString, varInfo){
     }
 
     let constDict = getConstVars(model.global +'\n'+ model.nta.template[0].declaration[0]);
+    let varDomain = getVarDomain(model.global +'\n'+ model.nta.template[0].declaration[0]);
+
+    for(let v in varDomain){
+        let chunk = varDomain[v].replace(/[\,\[\]]+/gm,'').split(' ').filter(x=>x)
+        if(chunk[0] === 'chan' || chunk[0] === 'const')delete varDomain[v];
+        else if(chunk[0]=== 'int'){
+            if(chunk[1] && chunk[2]){
+                varDomain[v] = [
+                    Number(retrieveNumberOrDictEntry(chunk[1], constDict)),
+                    Number(retrieveNumberOrDictEntry(chunk[2], constDict))
+                ];
+            }else{
+                varDomain[v] = [1-INT16_MAX, INT16_MAX]
+            }
+        }
+    }
+    // console.log(varDomain);
     
     let locList = model.getLocationsOf(SINGLETON_NAME);    // e.g., ["id0__id0", "id0__id1"]
     let adjList = model.adjacencyListOf(SINGLETON_NAME);   
@@ -262,11 +279,17 @@ function approximateLocalDomain(inputString, varInfo){
         if(noSatSelect){
             return;
         }
-    
+
+        // console.log(etaRestriction);
         // take all possible evaluations for the remaining variables
         avars.forEach(x=>{
             if(!etaRestriction[x]){
-                etaRestriction[x] = Array.from({length:INT16_MAX*2},(v,k)=>k-1-INT16_MAX)
+                if(varDomain.hasOwnProperty(x)){
+                    etaRestriction[x] = Array.from({length:varDomain[x][0]+varDomain[x][1]+1},(v,k)=>k+varDomain[x][0])
+                    // console.log(`for ${x} etaRestriction = ${etaRestriction[x]}`);
+                }else{
+                    etaRestriction[x] = Array.from({length:INT16_MAX*2},(v,k)=>k-1-INT16_MAX)
+                }
             }
         })
     
@@ -286,7 +309,12 @@ function approximateLocalDomain(inputString, varInfo){
             }
         })
     
-        // console.log(`Number of eta: ${prodSize}`);
+        
+        // if(prodSize>10000){
+        //     console.log(`Number of eta: ${prodSize}`);
+        //     console.log(etaRestriction);
+        // }
+        
         for(let ii=0;ii<prodSize;ii++){
             let etaCurr = {};
             let k = ii;
@@ -301,6 +329,9 @@ function approximateLocalDomain(inputString, varInfo){
                 etaCurr[name]=val;
                 k = Math.floor(k/m);
             }
+
+            // skip etaCurr if not agree with ldsrc
+            if(!_ld_src.has(vvars.map((v,ind)=>etaCurr[v]).join(',')))continue;
     
             // find the last assignemnt stmt where vvar appear => discard the suffix
             
@@ -309,6 +340,7 @@ function approximateLocalDomain(inputString, varInfo){
                     let left = stm[0].getText();
                     let right = stm[1];
                     
+                    // console.log(`used to be ${ares.listener.joinToString(right)}`);
                     let str = ares.listener.substituteStr(right, etaCurr);
                     // console.log(`left = ${left}, right = ${str}`);
                     etaCurr[left] = eval(str);
@@ -366,6 +398,12 @@ function parseTreeWalk(input, ruleName = 'expr'){
 function getConstVars(input){
     let {tree, myListener} = parseTreeWalk(input, 'translation');
     return myListener._const_dict;
+}
+
+function getVarDomain(input){
+    let {tree, myListener} = parseTreeWalk(input, 'translation');
+    // console.log(myListener._vlist.reduce((acc,x)=>(acc[x.vid.text]=x._varType,acc),{}));
+    return myListener._vlist.reduce((acc,x)=>(acc[x.vid.text]=x._varType,acc),{});
 }
 
 function retrieveNumberOrDictEntry(val, dict){

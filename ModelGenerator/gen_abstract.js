@@ -11,6 +11,7 @@ import yagParser from '../Parser/YetAnotherGrammar/yagParser.js';
 import CONFIG from '../config.js';
 import UppaalXML from '../Parser/uppaalxml.js';
 import CustomListener from '../Parser/customListener.js';
+import { kStringMaxLength } from 'buffer';
 // ============================================================
 
 
@@ -22,7 +23,10 @@ function generateAbstractModel(inputString, abstractionParams){
     // fs.writeFileSync(CONFIG.pathToOutputModel, xmlInputString);
     let model = new UppaalXML(inputString);
 
-    model.fillMissingLocationNames('Voter');
+    model.getTemplateNames().forEach(_t=>{
+        model.fillMissingLocationNames(_t);
+    })
+    
 
     const myHash = `_` + Date.now().toString(36); // a rand-ish string (might start with a number!!!)
     abstractionParams.myHash = myHash;
@@ -64,7 +68,14 @@ function generateAbstractModel(inputString, abstractionParams){
     bar(model, abstractionParams);
 
     // finally save the abstract model into XML file
-    fs.writeFileSync(CONFIG.pathToOutputModel, model.toString());
+
+
+    let mstr = newlineFix(model.toString())
+    // 
+
+    fs.writeFileSync(CONFIG.pathToOutputModel, mstr);
+    // fs.writeFileSync(CONFIG.pathToOutputModel, model.toString());
+    console.log("App: gen_abstract finished");
     return model;
 }
 
@@ -125,7 +136,7 @@ function bar(model, params) {
     // let d = params.d; // local domain map
     // local domain const vars
     model.global = ldeConstVarDecString(params) + model.global;
-
+    
     // abstract (copies of) function declarations
     model.global += generateAbstractFDecString(model.global, params);
     model[params.template].local += generateAbstractFDecString(model[params.template].local, params);
@@ -272,6 +283,8 @@ function getListenerAfterParse(inputString, params, ruleName){
         console.log(`ERR: encountered an unexpected type of input = ${typeof input}`);
         return 0;
     }
+
+    // console.log(inputString);
     const chars = new antlr4.InputStream(inputString);
     const lexer = new yagLexer(chars);
     const tokens = new antlr4.CommonTokenStream(lexer);
@@ -331,7 +344,13 @@ function generateAbstractLabelString(input, params){
     return res._stmtlist.map(ctx => res.joinToAText(ctx).slice(0,-1)).join(',') //? join might be redundant
 }
 
-
+// newline fix
+function newlineFix(str){
+    let nl_reg = /(?<=<label[^<]*?kind="assignment"[^<]*?>)([^<]*?)(?=<\/label>)/g;
+    return str.replace(nl_reg,function(match){
+        return match.replace(/\s+/gm,'').split(',').join(',\n')
+    })
+}
 
 export {generateAbstractModel};
 export default {};

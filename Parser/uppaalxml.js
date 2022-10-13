@@ -168,7 +168,7 @@ export default class UppaalXML {
 
         // strip all non-enumerable custom attributes and methods
         let obj = JSON.parse(JSON.stringify(this.nta)); 
-
+                
         // xmlPrefixFix will be prepended instead of a header, nta tag encloses the body
         const xmlBuilder = new xml2js.Builder({ 
             headless: true,
@@ -177,7 +177,8 @@ export default class UppaalXML {
 
         // concat + remove EOL chars
         // return (xmlPrefixFix + xmlBuilder.buildObject(obj)).replace("&#xD",'').replace("&#xA;",'');
-        return xmlPrefixFix + xmlBuilder.buildObject(obj);
+        return xmlPrefixFix + xmlBuilder.buildObject(obj).replace('<formula/>','<formula></formula>').replace('<comment/>','<comment></comment>');
+        // replaces - for omitting XPath corrupted error by verifyta (due to `<tag/>` instead of `<tag></tag>`)
     }
 
 

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>const int __d_vals_at_id6__id3__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id5__id3__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id6__id2__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id4__id3__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id5__id2__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id6__id0__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id4__id2__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id5__id0__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id4__id0__l972kzhh[1][3] = {{0,0,0}};
+const int __d_vals_at_id4__id1__l972kzhh[3][3] = {{0,0,0},{1,0,0},{0,1,0}};
+// Place global declarations here.
+const int N_V = 1;
+const int N_C = 2;
+
+chan decl[N_V+1];
+chan coll[N_V+1];
+chan vote[N_V+1];
+//int[0,N_V] tally[N_C+1];
+
+int[0,2] sh_dec; // 1 - inperson, 2 - by mail
+int[0,1] buff_mail[N_V+1]; // election package is delivered to mailbox
+int[0,N_C] sh_vt; // chosen candidate
+int[0,1] sh_sg; // signed form (honest+private casting)
+
+//int ballots_received(){
+//    int i;
+//	int res=0;
+//	if(tally_sum!=0)return tally_sum;
+//    return tally_1+tally_2+tally_3;
+//}
+</declaration>
+	<template>
+		<name x="5" y="5">ExtendedMAS</name>
+		<declaration>// From Authority:
+int [ 0, 2 ] Authority_dec_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_pack_sent [ N_V + 1 ]; int [ 0, N_C ] Authority_vt_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_sg_recv [ N_V + 1 ]; int [ 0, N_V ] Authority_tally_1, Authority_tally_2, Authority_tally_3; int Authority_tally_sum;
+// From Voter_1:
+const int Voter_1_id = 1;
+int [ 0, 2 ] Voter_1_mem_dec; int [ 0, 1 ] Voter_1_mem_sg; int [ 0, N_C ] Voter_1_mem_vt;
+
+void _set_argsr_values__l972kzhh(int _val_of_Authority_tally_1, int _val_of_Authority_tally_2, int _val_of_Authority_tally_3){
+	Authority_tally_1= _val_of_Authority_tally_1;
+	Authority_tally_2= _val_of_Authority_tally_2;
+	Authority_tally_3= _val_of_Authority_tally_3;
+}
+void _update_argsn_values__l972kzhh(){
+	
+}</declaration>
+		<location id="id0" x="40" y="80">
+			<name x="30" y="50">id6__id3</name>
+		</location>
+		<location id="id1" x="190" y="80">
+			<name x="180" y="50">id5__id3</name>
+		</location>
+		<location id="id2" x="190" y="230">
+			<name x="180" y="200">id6__id2</name>
+		</location>
+		<location id="id3" x="40" y="230">
+			<name x="30" y="200">id4__id3</name>
+		</location>
+		<location id="id4" x="340" y="80">
+			<name x="330" y="50">id5__id2</name>
+		</location>
+		<location id="id5" x="340" y="230">
+			<name x="330" y="200">id6__id0</name>
+		</location>
+		<location id="id6" x="340" y="380">
+			<name x="330" y="350">id4__id2</name>
+		</location>
+		<location id="id7" x="190" y="380">
+			<name x="180" y="350">id5__id0</name>
+		</location>
+		<location id="id8" x="40" y="380">
+			<name x="30" y="350">id4__id0</name>
+		</location>
+		<location id="id9" x="490" y="80">
+			<name x="480" y="50">id4__id1</name>
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="select" x="55" y="110">inperson:int[1,2],
+v_i:int[1,N_V],
+_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="55" y="125">Voter_1_id==v_i</label>
+			<label kind="assignment" x="55" y="155">_set_argsr_values__l972kzhh(__d_vals_at_id6__id3__l972kzhh[_l972kzhh][0],__d_vals_at_id6__id3__l972kzhh[_l972kzhh][1],__d_vals_at_id6__id3__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+Voter_1_mem_dec = inperson, sh_dec = inperson,
+Authority_dec_recv [ v_i ] = sh_dec, sh_dec = 0,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="130" y="35">v_i:int[1,N_V],
+_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="130" y="50">Authority_dec_recv [ v_i ] == 2 &amp;&amp; Authority_pack_sent [ v_i ] == 0</label>
+			<label kind="assignment" x="130" y="80">_set_argsr_values__l972kzhh(__d_vals_at_id5__id3__l972kzhh[_l972kzhh][0],__d_vals_at_id5__id3__l972kzhh[_l972kzhh][1],__d_vals_at_id5__id3__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+buff_mail [ v_i ] = 1, Authority_pack_sent [ v_i ] += 1,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+			<nail x="160" y="50"/>
+			<nail x="220" y="50"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id3"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id4"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id5"/>
+			<label kind="select" x="205" y="185">_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="205" y="200">Voter_1_mem_dec == 2 &amp;&amp; buff_mail [ Voter_1_id ] == 1</label>
+			<label kind="assignment" x="205" y="230">_set_argsr_values__l972kzhh(__d_vals_at_id6__id2__l972kzhh[_l972kzhh][0],__d_vals_at_id6__id2__l972kzhh[_l972kzhh][1],__d_vals_at_id6__id2__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+buff_mail [ Voter_1_id ] = 0,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id4"/>
+			<label kind="select" x="280" y="35">v_i:int[1,N_V],
+_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="280" y="50">Authority_dec_recv [ v_i ] == 2 &amp;&amp; Authority_pack_sent [ v_i ] == 0</label>
+			<label kind="assignment" x="280" y="80">_set_argsr_values__l972kzhh(__d_vals_at_id5__id2__l972kzhh[_l972kzhh][0],__d_vals_at_id5__id2__l972kzhh[_l972kzhh][1],__d_vals_at_id5__id2__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+buff_mail [ v_i ] = 1, Authority_pack_sent [ v_i ] += 1,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+			<nail x="310" y="50"/>
+			<nail x="370" y="50"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id6"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id7"/>
+			<label kind="select" x="205" y="185">_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="205" y="200">Voter_1_mem_dec == 2 &amp;&amp; buff_mail [ Voter_1_id ] == 1</label>
+			<label kind="assignment" x="205" y="230">_set_argsr_values__l972kzhh(__d_vals_at_id5__id2__l972kzhh[_l972kzhh][0],__d_vals_at_id5__id2__l972kzhh[_l972kzhh][1],__d_vals_at_id5__id2__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+buff_mail [ Voter_1_id ] = 0,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id7"/>
+			<label kind="select" x="205" y="185">v_i:int[1,N_V],
+_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="205" y="200">Voter_1_id==v_i &amp;&amp; Voter_1_mem_dec == 1 &amp;&amp; Authority_dec_recv [ v_i ] == 1 &amp;&amp; Authority_pack_sent [ v_i ] == 0</label>
+			<label kind="assignment" x="205" y="230">_set_argsr_values__l972kzhh(__d_vals_at_id5__id2__l972kzhh[_l972kzhh][0],__d_vals_at_id5__id2__l972kzhh[_l972kzhh][1],__d_vals_at_id5__id2__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+Authority_pack_sent [ v_i ] += 1,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id7"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id8"/>
+			<label kind="select" x="130" y="335">_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="130" y="350">Voter_1_mem_dec == 2 &amp;&amp; buff_mail [ Voter_1_id ] == 1</label>
+			<label kind="assignment" x="130" y="380">_set_argsr_values__l972kzhh(__d_vals_at_id4__id2__l972kzhh[_l972kzhh][0],__d_vals_at_id4__id2__l972kzhh[_l972kzhh][1],__d_vals_at_id4__id2__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+buff_mail [ Voter_1_id ] = 0,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id7"/>
+			<label kind="select" x="130" y="335">v_i:int[1,N_V],
+_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="130" y="350">Authority_dec_recv [ v_i ] == 2 &amp;&amp; Authority_pack_sent [ v_i ] == 0</label>
+			<label kind="assignment" x="130" y="380">_set_argsr_values__l972kzhh(__d_vals_at_id5__id0__l972kzhh[_l972kzhh][0],__d_vals_at_id5__id0__l972kzhh[_l972kzhh][1],__d_vals_at_id5__id0__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+buff_mail [ v_i ] = 1, Authority_pack_sent [ v_i ] += 1,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+			<nail x="160" y="350"/>
+			<nail x="220" y="350"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id9"/>
+			<label kind="select" x="205" y="185">vt:int[0,N_C],
+sg:int[0,1],
+v_i:int[1,N_V],
+_l972kzhh:int[0,0]</label>
+			<label kind="guard" x="205" y="200">Voter_1_id==v_i</label>
+			<label kind="assignment" x="205" y="230">_set_argsr_values__l972kzhh(__d_vals_at_id4__id0__l972kzhh[_l972kzhh][0],__d_vals_at_id4__id0__l972kzhh[_l972kzhh][1],__d_vals_at_id4__id0__l972kzhh[_l972kzhh][2]),
+_update_argsn_values__l972kzhh(),
+sh_vt = vt, sh_sg = sg, Voter_1_mem_sg = sg, Voter_1_mem_vt = vt,
+Authority_tally_1 = ( sh_sg &amp;&amp; sh_vt == 1 ) ? ( Authority_tally_1 + 1 ) : Authority_tally_1, Authority_tally_2 = ( sh_sg &amp;&amp; sh_vt == 2 ) ? ( Authority_tally_2 + 1 ) : Authority_tally_2, Authority_tally_3 = ( sh_sg &amp;&amp; sh_vt == 3 ) ? ( Authority_tally_3 + 1 ) : Authority_tally_3, sh_vt = 0, sh_sg = 0,
+_update_argsn_values__l972kzhh(),
+_set_argsr_values__l972kzhh(0,0,0)</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+Process = ExtendedMAS();
+// List one or more processes to be composed into a system.
+system Process;
+    </system>
+	<queries>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>

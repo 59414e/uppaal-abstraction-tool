@@ -57,16 +57,20 @@ export default class CustomListener1 extends yagListener{
 				}
 			}
 		}
+		
+		this._temp_curr_vtype = this.joinToString(ctx.getChild(0))
 	}
 
 	// Exit a parse tree produced by yagParser#vdec_list.
 	exitVdec_list(ctx) {
+		delete this._temp_curr_vtype;
 	}
 
 
 	// Enter a parse tree produced by yagParser#vdec.
 	enterVdec(ctx) {
         this._vlist.push(ctx);
+		ctx._varType = this._temp_curr_vtype;
 	}
 
 	// Exit a parse tree produced by yagParser#vdec.

@@ -85,52 +85,378 @@ import { generateAbstractModel } from './ModelGenerator/gen_abstract.js';
 
 let inputStr = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
 let alphaStr = renamingPreproc(inputStr).toString();
-let extModel = generateProduct(alphaStr);
+// console.log(alphaStr);
+// let extModel = generateProduct(alphaStr);
+let prodStr = newlineFix(generateProduct(alphaStr).toString());
 // console.log(extModel.nta.template[0].location.length);
 
 
-let ld = approximateLocalDomain(
-    extModel.toString(),
+// newline fix
+function newlineFix(str){
+    let nl_reg = /(?<=<label[^<]*?kind="assignment"[^<]*?>)([^<]*?)(?=<\/label>)/g;
+    return str.replace(nl_reg,function(match){
+        return match.replace(/\s+/gm,'').split(',').join(',\n')
+    })
+}
+
+function convertMapping(myMapping){
+    let res = {};
+    for(let x in myMapping){
+        res[x] = [...myMapping[x] ].map(s=>{
+            return s.split(',').map(v=>Number(v))
+        })
+    }
+    return res;
+}
+
+// ================================
+// Abstraction 1 
+// (remove mem_vt, mem_sg)
+// ================================
+
+let ld_1_on_templates = approximateLocalDomain(
+    prodStr,
     {
-        vars: ['Voter_1_mem_dec', 'Voter_1_mem_sg', 'Voter_1_mem_vt'],
-        valInit: [0, 0, 0]
+        vars: ['mem_sg', 'mem_vt'],
+        valInit: [0, 0]
     }
 );
 
-let myMapping = restictionOfLocalDomain(ld, 1)
+let d_1_t = convertMapping( 
+    restictionOfLocalDomain(ld_1_on_templates, 1) 
+);
 
-console.log(myMapping);
 
-// -------
-let abstractionParams = {
+let params_1_on_templates = {
     template: "Voter",
     scope: "*",
     val0: {
-        mem_sg: 0,
-        mem_vt: 0
+        'mem_sg': 0,
+        'mem_vt': 0
     },
     get argsR() {
         return Object.keys(this.val0)
     },
+    d: d_1_t,
     argsN: [
-        // {
-        //     name: "validVote",      // for now argsN are reset when argsR are assumed and eval'd when those are reset
-        //     val0: 0,
-        //     f: `mem_sg && mem_vt`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
-        // },
-        // {
-        //     name: "invalidVote",
-        //     val0: 1,
-        //     f: `!(mem_sg && mem_vt)`
-        // },
     ],
-    // get d from restrMapping
-    d: {
-        "id3": [[0, 0]],
-        "id2": [[0, 0]],
-        "id0": [[0, 0]],
-        "id1": [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]
-    },
 }
 
-let abstrModel = generateAbstractModel(inputStr, abstractionParams);
+let amodel_1_on_templates = generateAbstractModel(
+    inputStr, 
+    params_1_on_templates
+);
+
+fs.writeFileSync('./output_files/a1_t.xml', amodel_1_on_templates.toString())
+
+// --------------------------------
+
+let ld_1_on_instances1 = approximateLocalDomain(
+    prodStr,
+    {
+        vars: ['Voter_1_mem_sg', 'Voter_1_mem_vt'],
+        valInit: [0, 0]
+    }
+);
+
+let d_1_i1 = convertMapping(ld_1_on_instances1);
+
+let params_1_on_instances1 = {
+    template: "ExtendedMAS",
+    scope: "*",
+    val0: {
+        'Voter_1_mem_sg': 0,
+        'Voter_1_mem_vt': 0
+    },
+    get argsR() {
+        return Object.keys(this.val0)
+    },
+    d: d_1_i1,
+    argsN: [
+    ],
+}
+
+
+let amodel_1_on_instances1 = generateAbstractModel(
+    prodStr, 
+    params_1_on_instances1
+);
+
+fs.writeFileSync('./output_files/a1_i1.xml', amodel_1_on_instances1.toString())
+
+// --------------------------------
+
+let ld_1_on_instances2 = approximateLocalDomain(
+    prodStr,
+    {
+        vars: [
+            'Voter_1_mem_sg', 'Voter_1_mem_vt',
+            'Voter_2_mem_sg', 'Voter_2_mem_vt'
+        ],
+        valInit: [0, 0, 0, 0]
+    }
+);
+
+let d_1_i2 = convertMapping(ld_1_on_instances2);
+
+let params_1_on_instances2 = {
+    template: "ExtendedMAS",
+    scope: "*",
+    val0: {
+        'Voter_1_mem_sg': 0,
+        'Voter_1_mem_vt': 0,
+        'Voter_2_mem_sg': 0,
+        'Voter_2_mem_vt': 0
+    },
+    get argsR() {
+        return Object.keys(this.val0)
+    },
+    d: d_1_i2,
+    argsN: [
+    ],
+}
+
+
+let amodel_1_on_instances2 = generateAbstractModel(
+    prodStr, 
+    params_1_on_instances2
+);
+
+fs.writeFileSync('./output_files/a1_i2.xml', amodel_1_on_instances2.toString())
+
+// --------------------------------
+
+let ld_1_on_instances3 = approximateLocalDomain(
+    prodStr,
+    {
+        vars: [
+            'Voter_1_mem_sg', 'Voter_1_mem_vt',
+            'Voter_2_mem_sg', 'Voter_2_mem_vt',
+            'Voter_3_mem_sg', 'Voter_3_mem_vt'
+        ],
+        valInit: [0, 0, 0, 0, 0, 0]
+    }
+);
+
+let d_1_i3 = convertMapping(ld_1_on_instances3);
+
+let params_1_on_instances3 = {
+    template: "ExtendedMAS",
+    scope: "*",
+    val0: {
+        'Voter_1_mem_sg': 0,
+        'Voter_1_mem_vt': 0,
+        'Voter_2_mem_sg': 0,
+        'Voter_2_mem_vt': 0,
+        'Voter_3_mem_sg': 0,
+        'Voter_3_mem_vt': 0
+    },
+    get argsR() {
+        return Object.keys(this.val0)
+    },
+    d: d_1_i3,
+    argsN: [
+    ],
+}
+
+
+let amodel_1_on_instances3 = generateAbstractModel(
+    prodStr, 
+    params_1_on_instances3
+);
+
+fs.writeFileSync('./output_files/a1_i3.xml', amodel_1_on_instances3.toString())
+
+// --------------------------------
+
+let ld_1_on_instances4 = approximateLocalDomain(
+    prodStr,
+    {
+        vars: [
+            'Voter_1_mem_sg', 'Voter_1_mem_vt',
+            'Voter_2_mem_sg', 'Voter_2_mem_vt',
+            'Voter_3_mem_sg', 'Voter_3_mem_vt',
+            'Voter_4_mem_sg', 'Voter_4_mem_vt'
+        ],
+        valInit: [0, 0, 0, 0, 0, 0, 0, 0]
+    }
+);
+
+let d_1_i4 = convertMapping(ld_1_on_instances4);
+
+let params_1_on_instances4 = {
+    template: "ExtendedMAS",
+    scope: "*",
+    val0: {
+        'Voter_1_mem_sg': 0,
+        'Voter_1_mem_vt': 0,
+        'Voter_2_mem_sg': 0,
+        'Voter_2_mem_vt': 0,
+        'Voter_3_mem_sg': 0,
+        'Voter_3_mem_vt': 0,
+        'Voter_4_mem_sg': 0,
+        'Voter_4_mem_vt': 0
+    },
+    get argsR() {
+        return Object.keys(this.val0)
+    },
+    d: d_1_i4,
+    argsN: [
+    ],
+}
+
+
+let amodel_1_on_instances4 = generateAbstractModel(
+    prodStr, 
+    params_1_on_instances4
+);
+
+fs.writeFileSync('./output_files/a1_i4.xml', amodel_1_on_instances4.toString())
+
+
+// ================================
+// Abstraction 2
+// ================================
+
+
+// ================================
+// Abstraction 3
+// ================================
+
+
+
+// let ld = approximateLocalDomain(
+//     extModel.toString(),
+//     {
+//         vars: ['Authority_tally_1','Authority_tally_2','Authority_tally_3'],
+//         valInit: [0,0,0]
+//     }
+// );
+
+// console.log(ld);
+
+
+// let ld = approximateLocalDomain(
+//     extModel.toString(),
+//     {
+//         vars: ['Voter_1_mem_sg', 'Voter_1_mem_vt'],
+//         valInit: [0, 0]
+//     }
+// );
+
+// let ld2 = approximateLocalDomain(
+//     extModel.toString(),
+//     {
+//         vars: ['Voter_2_mem_dec', 'Voter_2_mem_sg', 'Voter_2_mem_vt'],
+//         valInit: [0, 0, 0]
+//     }
+// );
+// console.log(restictionOfLocalDomain(ld, 1));
+// console.log(restictionOfLocalDomain(ld2, 2));
+
+// let myMapping = restictionOfLocalDomain(ld, 0)
+// let myMapping = restictionOfLocalDomain(ld, 1)
+// let myMapping = ld;
+
+
+// console.log(myMapping);
+
+// // -------
+// let abstractionParams = {
+//     template: "Voter",
+//     scope: "*",
+   
+//     val0: {
+//         mem_sg: 0,
+//         mem_vt: 0
+//     },
+//     get argsR() {
+//         return Object.keys(this.val0)
+//     },
+//     // d: myMapping,
+//     argsN: [
+//         // {
+//         //     name: "validVote",      // for now argsN are reset when argsR are assumed and eval'd when those are reset
+//         //     val0: 0,
+//         //     f: `mem_sg && mem_vt`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
+//         // },
+//         // {
+//         //     name: "invalidVote",
+//         //     val0: 1,
+//         //     f: `!(mem_sg && mem_vt)`
+//         // },
+//     ],
+//     // get d from restrMapping
+//     d: {
+//         "id3": [[0, 0]],
+//         "id2": [[0, 0]],
+//         "id0": [[0, 0]],
+//         "id1": [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2]]
+//     },
+// }
+
+// let abstractionParams3 = {
+//     template: "Authority",
+//     scope: "*",
+//     val0: {
+//         tally_1: 0,
+//         tally_2: 0,
+//         tally_3: 0
+//     },
+//     get argsR() {
+//         return Object.keys(this.val0)
+//     },
+//     argsN: [
+//         {
+//             name: 'tally_total',      // for now argsN are reset when argsR are assumed and eval'd when those are reset
+//             val0: 0,
+//             f: `tally_1+tally_2+tally_3`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
+//         }
+//     ],
+//     d: myMapping
+// }
+
+// let abstrModel = generateAbstractModel(extModel.toString(), abstractionParams);
+// let abstrModel = generateAbstractModel(inputStr, abstractionParams);
+
+
+// let abstractionParams1 = {
+//     template: "ExtendedMAS",
+//     scope: "*",
+//     val0: {
+//         Authority_tally_1: 0,
+//         Authority_tally_2: 0,
+//         Authority_tally_3: 0
+//     },
+//     get argsR() {
+//         return Object.keys(this.val0)
+//     },
+//     argsN: [
+//         {
+//             name: 'tally_total',      // for now argsN are reset when argsR are assumed and eval'd when those are reset
+//             val0: 0,
+//             f: `Authority_tally_1+Authority_tally_2+Authority_tally_3`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
+//         }
+//     ],
+//     d: myMapping,
+// }
+
+// generateAbstractModel(extModel.toString(), abstractionParams1);
+
+
+// let abstractionParams4 = {
+//     template: "ExtendedMAS",
+//     scope: "*",
+//     val0: {
+//         'Voter_1_mem_sg': 0,
+//         'Voter_1_mem_vt': 0
+//     },
+//     get argsR() {
+//         return Object.keys(this.val0)
+//     },
+//     d: myMapping,
+//     argsN: [
+//     ],
+// }
+
+// let abstrModel = generateAbstractModel(newlineFix(extModel.toString()), abstractionParams4);
