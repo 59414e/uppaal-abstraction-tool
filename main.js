@@ -114,209 +114,309 @@ function convertMapping(myMapping){
 // (remove mem_vt, mem_sg)
 // ================================
 
-let ld_1_on_templates = approximateLocalDomain(
-    prodStr,
-    {
-        vars: ['mem_sg', 'mem_vt'],
-        valInit: [0, 0]
-    }
-);
-
-let d_1_t = convertMapping( 
-    restictionOfLocalDomain(ld_1_on_templates, 1) 
-);
+if(false){
+    let ld_1_on_templates = approximateLocalDomain(
+        inputStr,
+        {
+            vars: ['mem_sg', 'mem_vt'],
+            valInit: [0, 0]
+        },
+        "Voter"
+    );
 
 
-let params_1_on_templates = {
-    template: "Voter",
-    scope: "*",
-    val0: {
-        'mem_sg': 0,
-        'mem_vt': 0
-    },
-    get argsR() {
-        return Object.keys(this.val0)
-    },
-    d: d_1_t,
-    argsN: [
-    ],
-}
-
-let amodel_1_on_templates = generateAbstractModel(
-    inputStr, 
-    params_1_on_templates
-);
-
-fs.writeFileSync('./output_files/a1_t.xml', amodel_1_on_templates.toString())
-
-// --------------------------------
-
-let ld_1_on_instances1 = approximateLocalDomain(
-    prodStr,
-    {
-        vars: ['Voter_1_mem_sg', 'Voter_1_mem_vt'],
-        valInit: [0, 0]
-    }
-);
-
-let d_1_i1 = convertMapping(ld_1_on_instances1);
-
-let params_1_on_instances1 = {
-    template: "ExtendedMAS",
-    scope: "*",
-    val0: {
-        'Voter_1_mem_sg': 0,
-        'Voter_1_mem_vt': 0
-    },
-    get argsR() {
-        return Object.keys(this.val0)
-    },
-    d: d_1_i1,
-    argsN: [
-    ],
-}
+    let d_1_t = convertMapping( 
+        ld_1_on_templates
+        // restictionOfLocalDomain(ld_1_on_templates, 1) 
+    );
 
 
-let amodel_1_on_instances1 = generateAbstractModel(
-    prodStr, 
-    params_1_on_instances1
-);
-
-fs.writeFileSync('./output_files/a1_i1.xml', amodel_1_on_instances1.toString())
-
-// --------------------------------
-
-let ld_1_on_instances2 = approximateLocalDomain(
-    prodStr,
-    {
-        vars: [
-            'Voter_1_mem_sg', 'Voter_1_mem_vt',
-            'Voter_2_mem_sg', 'Voter_2_mem_vt'
+    let params_1_on_templates = {
+        template: "Voter",
+        scope: "*",
+        val0: {
+            'mem_sg': 0,
+            'mem_vt': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: d_1_t,
+        argsN: [
         ],
-        valInit: [0, 0, 0, 0]
     }
-);
 
-let d_1_i2 = convertMapping(ld_1_on_instances2);
+    let amodel_1_on_templates = generateAbstractModel(
+        inputStr, 
+        params_1_on_templates
+    );
 
-let params_1_on_instances2 = {
-    template: "ExtendedMAS",
-    scope: "*",
-    val0: {
-        'Voter_1_mem_sg': 0,
-        'Voter_1_mem_vt': 0,
-        'Voter_2_mem_sg': 0,
-        'Voter_2_mem_vt': 0
-    },
-    get argsR() {
-        return Object.keys(this.val0)
-    },
-    d: d_1_i2,
-    argsN: [
-    ],
-}
+    fs.writeFileSync('./output_files/a1_t.xml', amodel_1_on_templates.toString())
 
+    // --------------------------------
 
-let amodel_1_on_instances2 = generateAbstractModel(
-    prodStr, 
-    params_1_on_instances2
-);
+    let ld_1_on_instances1 = approximateLocalDomain(
+        prodStr,
+        {
+            vars: ['Voter_1_mem_sg', 'Voter_1_mem_vt'],
+            valInit: [0, 0]
+        }
+    );
 
-fs.writeFileSync('./output_files/a1_i2.xml', amodel_1_on_instances2.toString())
+    let d_1_i1 = convertMapping(ld_1_on_instances1);
 
-// --------------------------------
-
-let ld_1_on_instances3 = approximateLocalDomain(
-    prodStr,
-    {
-        vars: [
-            'Voter_1_mem_sg', 'Voter_1_mem_vt',
-            'Voter_2_mem_sg', 'Voter_2_mem_vt',
-            'Voter_3_mem_sg', 'Voter_3_mem_vt'
+    let params_1_on_instances1 = {
+        template: "ExtendedMAS",
+        scope: "*",
+        val0: {
+            'Voter_1_mem_sg': 0,
+            'Voter_1_mem_vt': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: d_1_i1,
+        argsN: [
         ],
-        valInit: [0, 0, 0, 0, 0, 0]
     }
-);
-
-let d_1_i3 = convertMapping(ld_1_on_instances3);
-
-let params_1_on_instances3 = {
-    template: "ExtendedMAS",
-    scope: "*",
-    val0: {
-        'Voter_1_mem_sg': 0,
-        'Voter_1_mem_vt': 0,
-        'Voter_2_mem_sg': 0,
-        'Voter_2_mem_vt': 0,
-        'Voter_3_mem_sg': 0,
-        'Voter_3_mem_vt': 0
-    },
-    get argsR() {
-        return Object.keys(this.val0)
-    },
-    d: d_1_i3,
-    argsN: [
-    ],
-}
 
 
-let amodel_1_on_instances3 = generateAbstractModel(
-    prodStr, 
-    params_1_on_instances3
-);
+    let amodel_1_on_instances1 = generateAbstractModel(
+        prodStr, 
+        params_1_on_instances1
+    );
 
-fs.writeFileSync('./output_files/a1_i3.xml', amodel_1_on_instances3.toString())
+    fs.writeFileSync('./output_files/a1_i1.xml', amodel_1_on_instances1.toString())
 
-// --------------------------------
+    // --------------------------------
 
-let ld_1_on_instances4 = approximateLocalDomain(
-    prodStr,
-    {
-        vars: [
-            'Voter_1_mem_sg', 'Voter_1_mem_vt',
-            'Voter_2_mem_sg', 'Voter_2_mem_vt',
-            'Voter_3_mem_sg', 'Voter_3_mem_vt',
-            'Voter_4_mem_sg', 'Voter_4_mem_vt'
+    let ld_1_on_instances2 = approximateLocalDomain(
+        prodStr,
+        {
+            vars: [
+                'Voter_1_mem_sg', 'Voter_1_mem_vt',
+                'Voter_2_mem_sg', 'Voter_2_mem_vt'
+            ],
+            valInit: [0, 0, 0, 0]
+        }
+    );
+
+    let d_1_i2 = convertMapping(ld_1_on_instances2);
+
+    let params_1_on_instances2 = {
+        template: "ExtendedMAS",
+        scope: "*",
+        val0: {
+            'Voter_1_mem_sg': 0,
+            'Voter_1_mem_vt': 0,
+            'Voter_2_mem_sg': 0,
+            'Voter_2_mem_vt': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: d_1_i2,
+        argsN: [
         ],
-        valInit: [0, 0, 0, 0, 0, 0, 0, 0]
     }
-);
 
-let d_1_i4 = convertMapping(ld_1_on_instances4);
 
-let params_1_on_instances4 = {
-    template: "ExtendedMAS",
-    scope: "*",
-    val0: {
-        'Voter_1_mem_sg': 0,
-        'Voter_1_mem_vt': 0,
-        'Voter_2_mem_sg': 0,
-        'Voter_2_mem_vt': 0,
-        'Voter_3_mem_sg': 0,
-        'Voter_3_mem_vt': 0,
-        'Voter_4_mem_sg': 0,
-        'Voter_4_mem_vt': 0
-    },
-    get argsR() {
-        return Object.keys(this.val0)
-    },
-    d: d_1_i4,
-    argsN: [
-    ],
+    let amodel_1_on_instances2 = generateAbstractModel(
+        prodStr, 
+        params_1_on_instances2
+    );
+
+    fs.writeFileSync('./output_files/a1_i2.xml', amodel_1_on_instances2.toString())
+
+    // --------------------------------
+
+    let ld_1_on_instances3 = approximateLocalDomain(
+        prodStr,
+        {
+            vars: [
+                'Voter_1_mem_sg', 'Voter_1_mem_vt',
+                'Voter_2_mem_sg', 'Voter_2_mem_vt',
+                'Voter_3_mem_sg', 'Voter_3_mem_vt'
+            ],
+            valInit: [0, 0, 0, 0, 0, 0]
+        }
+    );
+
+    let d_1_i3 = convertMapping(ld_1_on_instances3);
+
+    let params_1_on_instances3 = {
+        template: "ExtendedMAS",
+        scope: "*",
+        val0: {
+            'Voter_1_mem_sg': 0,
+            'Voter_1_mem_vt': 0,
+            'Voter_2_mem_sg': 0,
+            'Voter_2_mem_vt': 0,
+            'Voter_3_mem_sg': 0,
+            'Voter_3_mem_vt': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: d_1_i3,
+        argsN: [
+        ],
+    }
+
+
+    let amodel_1_on_instances3 = generateAbstractModel(
+        prodStr, 
+        params_1_on_instances3
+    );
+
+    fs.writeFileSync('./output_files/a1_i3.xml', amodel_1_on_instances3.toString())
+
+    // --------------------------------
+
+    let ld_1_on_instances4 = approximateLocalDomain(
+        prodStr,
+        {
+            vars: [
+                'Voter_1_mem_sg', 'Voter_1_mem_vt',
+                'Voter_2_mem_sg', 'Voter_2_mem_vt',
+                'Voter_3_mem_sg', 'Voter_3_mem_vt',
+                'Voter_4_mem_sg', 'Voter_4_mem_vt'
+            ],
+            valInit: [0, 0, 0, 0, 0, 0, 0, 0]
+        }
+    );
+
+    let d_1_i4 = convertMapping(ld_1_on_instances4);
+
+    let params_1_on_instances4 = {
+        template: "ExtendedMAS",
+        scope: "*",
+        val0: {
+            'Voter_1_mem_sg': 0,
+            'Voter_1_mem_vt': 0,
+            'Voter_2_mem_sg': 0,
+            'Voter_2_mem_vt': 0,
+            'Voter_3_mem_sg': 0,
+            'Voter_3_mem_vt': 0,
+            'Voter_4_mem_sg': 0,
+            'Voter_4_mem_vt': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: d_1_i4,
+        argsN: [
+        ],
+    }
+
+
+    let amodel_1_on_instances4 = generateAbstractModel(
+        prodStr, 
+        params_1_on_instances4
+    );
+
+    fs.writeFileSync('./output_files/a1_i4.xml', amodel_1_on_instances4.toString())
+
 }
-
-
-let amodel_1_on_instances4 = generateAbstractModel(
-    prodStr, 
-    params_1_on_instances4
-);
-
-fs.writeFileSync('./output_files/a1_i4.xml', amodel_1_on_instances4.toString())
-
 
 // ================================
 // Abstraction 2
+// (merge tally_i into tally_sum)
 // ================================
+
+if(true){
+    let ld_2_on_templates = approximateLocalDomain(
+        inputStr,
+        {
+            vars: ['tally_1', 'tally_2', 'tally_3'],
+            valInit: [0, 0, 0]
+        },
+        "Authority",
+        false
+    );
+
+    let d_2_t = convertMapping( 
+        ld_2_on_templates
+        // restictionOfLocalDomain(ld_2_on_templates, 0) 
+    );
+
+    let params_2_on_templates = {
+        template: "Authority",
+        scope: "*",
+        val0: {
+            'tally_1': 0,
+            'tally_2': 0,
+            'tally_3': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: d_2_t,
+        argsN: [
+            {
+                name: 'tally_total',      // for now argsN are reset when argsR are assumed and eval'd when those are reset
+                val0: 0,
+                f: `tally_1+tally_2+tally_3`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
+            }
+        ],
+    }
+
+    let amodel_2_on_templates = generateAbstractModel(
+        inputStr, 
+        params_2_on_templates
+    );
+
+    fs.writeFileSync('./output_files/a2_t.xml', amodel_2_on_templates.toString())
+
+    // --------------------------------
+
+    let ld_2_on_instances = approximateLocalDomain(
+        prodStr,
+        {
+            vars: [
+                'Authority_tally_1', 
+                'Authority_tally_2',
+                'Authority_tally_3',
+            ],
+            valInit: [0, 0, 0]
+        }
+    );
+
+    let d_2_i = convertMapping(
+        restictionOfLocalDomain(ld_2_on_instances,0)
+    );
+
+    let params_2_on_instances = {
+        template: "Authority",
+        scope: "*",
+        val0: {
+            'tally_1': 0,
+            'tally_2': 0,
+            'tally_3': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: d_2_i,
+        argsN: [
+            {
+                name: 'tally_total',
+                val0: 0,
+                f: `tally_1+tally_2+tally_3`
+            }
+        ],
+    }
+
+
+    let amodel_2_on_instances = generateAbstractModel(
+        inputStr, 
+        params_2_on_instances
+    );
+
+    fs.writeFileSync('./output_files/a2_i.xml', amodel_2_on_instances.toString())
+
+    // --------------------------------
+}
 
 
 // ================================

@@ -84,7 +84,9 @@ int[0,1] pack_sent[N_V+1];
 int[0,N_C] vt_recv[N_V+1]; 
 int[0,1] sg_recv[N_V+1]; 
 
-int[0,N_V] tally_1, tally_2, tally_3;
+int[0,N_V] tally_1;
+int[0,N_V] tally_2;
+int[0,N_V] tally_3;
 
 int tally_sum;
 

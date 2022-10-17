@@ -3,6 +3,8 @@ import * as path from 'path';
 
 
 const CONFIG = {
+    debug: false,
+
     INPUT: {
         DIR: "./sample_input",
         MODEL: "model.xml",

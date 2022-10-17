@@ -40,7 +40,7 @@ import CustomListener from '../Parser/customListener1.js';
 // ============================================================
 
 // todo: substitute arrays with maps for faster look-up
-function approximateLocalDomain(inputString, varInfo){
+function approximateLocalDomain(inputString, varInfo, targetTemplate, upperApprox=true){
     // read XML for the concrete model
     let model = new UppaalXML(inputString);
 
@@ -51,16 +51,16 @@ function approximateLocalDomain(inputString, varInfo){
     let vvars = varInfo.vars;
     let val0 = varInfo.valInit; 
     
-    const SINGLETON_NAME = model.getTemplateNames()[0]; 
+    const SINGLETON_NAME = targetTemplate || model.getTemplateNames()[0]; 
     const INT16_MAX = CONFIG.approximateDomain.int16Max;
     
 
-    if(SINGLETON_NAME != CONFIG.preprocessModel.productName){
-        console.log(`WARN, expected singleton name to be ${CONFIG.preprocessModel.productName}, but recevied ${SINGLETON_NAME}`);
-    }
+    // if(SINGLETON_NAME != CONFIG.preprocessModel.productName){
+    //     console.log(`WARN, expected singleton name to be ${CONFIG.preprocessModel.productName}, but recevied ${SINGLETON_NAME}`);
+    // }
 
-    let constDict = getConstVars(model.global +'\n'+ model.nta.template[0].declaration[0]);
-    let varDomain = getVarDomain(model.global +'\n'+ model.nta.template[0].declaration[0]);
+    let constDict = getConstVars(model.global +'\n'+ model[SINGLETON_NAME].declaration[0]);
+    let varDomain = getVarDomain(model.global +'\n'+ model[SINGLETON_NAME].declaration[0]);
 
     for(let v in varDomain){
         let chunk = varDomain[v].replace(/[\,\[\]]+/gm,'').split(' ').filter(x=>x)
@@ -119,10 +119,7 @@ function approximateLocalDomain(inputString, varInfo){
         }
     }
     
-    // const d0 = [];
-    // const d0 = '*';
-    
-    let localDomain = locList.reduce((acc,el)=>(acc[el]=new Set(),acc),{}); // local domain map initialized with zeros
+    let localDomain = locList.reduce((acc,el)=>(acc[el]=upperApprox ? new Set():new Set('*'),acc),{}); // local domain map initialized with zeros
     // let ld = llist.reduce((acc,el)=>(acc[el]=vvars.reduce((obj,curr)=>(obj[curr] = new Set(), obj),{}),acc),{}); // local domain map initialized with zeros
     
     let pi = locList.reduce((acc,el)=>(acc[el]=new Set(),acc),{}); 
@@ -131,7 +128,26 @@ function approximateLocalDomain(inputString, varInfo){
     let initial_location = model.getInitialLocationOf(SINGLETON_NAME);
     let queue = new Set();
     
-    localDomain[initial_location].add(val0.join(','));
+    function updateLocalDomain(ld, loc, arr, _upperApprox = upperApprox){
+        if(_upperApprox){
+            [...arr].forEach(val=>ld[loc].add(Array.isArray(val) ? val.join(',') : val))
+        }else{
+            if(ld[loc].has('*')){
+                ld[loc] = new Set([...arr])
+            }else{
+                // console.log(`from ld[loc] = ${[...ld[loc]]}`);
+                ld[loc] = new Set([...arr].filter(val=>ld[loc].has(val)))
+                // console.log(`to ld[loc] = ${[...ld[loc]]}`);
+                
+            }
+        }
+    }
+
+    updateLocalDomain(localDomain, initial_location, [val0.join(',')])
+
+    // console.log(localDomain[initial_location]);
+    // console.log(localDomain[initial_location]);
+    // localDomain[initial_location].add(val0.join(','));
     // vvars.forEach(v=>ld[initial_location][v].add(val0[v]))
     
     // starting from (l0,eta0) perform the BFS-like traversal until a stable d map is obtained
@@ -140,11 +156,12 @@ function approximateLocalDomain(inputString, varInfo){
     // note: uses outter scope
     function procAllEdgesBetween(src, trg){
         locToEdgeMap[src][trg].forEach(edge=>{
-            // console.log(`Processing an edge from ${src} to ${trg}`);
+            if(CONFIG.debug)console.log(`Processing an edge from ${src} to ${trg}`);
             if(edge.blank){
-                localDomain[src].forEach(v=>localDomain[trg].add(v)); // ld[trg] = union( ld[trg] , ld[src] )
+                updateLocalDomain(localDomain, trg, localDomain[src])
+                // localDomain[src].forEach(v=>localDomain[trg].add(v)); // ld[trg] = union( ld[trg] , ld[src] )
             }else{
-                procEdgeLabels(edge, vvars, model, localDomain[src],localDomain[trg])
+                procEdgeLabels(edge, vvars, model, localDomain, src, trg)
             }
         })
     }
@@ -187,9 +204,9 @@ function approximateLocalDomain(inputString, varInfo){
 
     
     // note: uses cosntDict (global var)
-    function procEdgeLabels(edge, vvars, model, _ld_src, _ld_trg){
-        let ld_src = new Set([..._ld_src].map(x=>x.split(',')));
-        
+    function procEdgeLabels(edge, vvars, model, _ld, _src, _trg){
+        if(_ld[_src].has('*'))console.log('ERR, encountered folded * for the ld...')
+        let ld_src = new Set([..._ld[_src]].map(x=>x.split(',')));
         // treats non-target variables evaluations as "flat" (i.e., non-vector)
         let etaRestriction = {}
 
@@ -251,7 +268,7 @@ function approximateLocalDomain(inputString, varInfo){
         let intersectionG = gvars?.filter(x=>vvarsNotInSelect.includes(x)) || [];
         if(intersectionA.length==0 && intersectionG.length==0)return;
     
-        let gsat = parseSimpleGuardAsDict(edge.guard, vvars);
+        let gsat = edge.guard ? parseSimpleGuardAsDict(edge.guard, vvars) : {};
         let noSatSelect = false;
     
         // note: this might not produce finest answers for guards with OR
@@ -311,10 +328,10 @@ function approximateLocalDomain(inputString, varInfo){
     
         
         // if(prodSize>10000){
-        //     console.log(`Number of eta: ${prodSize}`);
-        //     console.log(etaRestriction);
+            if(CONFIG.debug)console.log(`Number of eta: ${prodSize}`);
+            // console.log(etaRestriction);
         // }
-        
+        let ld_temp = new Set();
         for(let ii=0;ii<prodSize;ii++){
             let etaCurr = {};
             let k = ii;
@@ -331,7 +348,7 @@ function approximateLocalDomain(inputString, varInfo){
             }
 
             // skip etaCurr if not agree with ldsrc
-            if(!_ld_src.has(vvars.map((v,ind)=>etaCurr[v]).join(',')))continue;
+            if(!_ld[_src].has(vvars.map((v,ind)=>etaCurr[v]).join(',')))continue;
     
             // find the last assignemnt stmt where vvar appear => discard the suffix
             
@@ -346,13 +363,27 @@ function approximateLocalDomain(inputString, varInfo){
                     etaCurr[left] = eval(str);
                 })
             }
+
+            // check etaCurr agrees with the domains
+            let okWithDomain = true;
+            vvars.forEach(v=>{
+                // console.log(vvars);
+                // console.log(varDomain);
+                // console.log(etaCurr);
+                if(varDomain[v].indexOf(etaCurr[v])==-1)okWithDomain=false;
+            })
+
             // todo: add filter over vvarsNotInSelect?
             
             // add vvars from etaCurr to ld_trg
-            _ld_trg.add(
-                vvars.map((v,ind)=>etaCurr[v]).join(',')
-            )
+            if(okWithDomain){
+                ld_temp.add(
+                    vvars.map((v,ind)=>etaCurr[v]).join(',')
+                )
+            }
         }
+        updateLocalDomain(_ld,_trg, ld_temp)
+
     }
 }
 

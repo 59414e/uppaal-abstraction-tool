@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
         <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'><nta>
   <declaration>// Place global declarations here.&#xD;
-const int N_V = 6;&#xD;
+const int N_V = 4;&#xD;
 const int N_C = 3;&#xD;
 &#xD;
 chan decl[N_V+1];&#xD;
@@ -23,7 +23,7 @@ int[0,1] sh_sg; // signed form (honest+private casting)&#xD;
 </declaration>
   <template>
     <name>Authority</name>
-    <declaration>int [ 0, 2 ] Authority_dec_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_pack_sent [ N_V + 1 ]; int [ 0, N_C ] Authority_vt_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_sg_recv [ N_V + 1 ]; int [ 0, N_V ] Authority_tally_1, Authority_tally_2, Authority_tally_3; int Authority_tally_sum;</declaration>
+    <declaration>int [ 0, 2 ] Authority_dec_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_pack_sent [ N_V + 1 ]; int [ 0, N_C ] Authority_vt_recv [ N_V + 1 ]; int [ 0, 1 ] Authority_sg_recv [ N_V + 1 ]; int [ 0, N_V ] Authority_tally_1; int [ 0, N_V ] Authority_tally_2; int [ 0, N_V ] Authority_tally_3; int Authority_tally_sum;</declaration>
     <location id="id4" x="288" y="0">
       <name x="256" y="16">coll_vts</name>
     </location>
@@ -268,101 +268,7 @@ sg:int[0,1]</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>
-  <template>
-    <name>Voter_5</name>
-    <declaration>const int Voter_5_id = 5;
-int [ 0, 2 ] Voter_5_mem_dec; int [ 0, 1 ] Voter_5_mem_sg; int [ 0, N_C ] Voter_5_mem_vt;</declaration>
-    <location id="id0" x="64" y="-96"/>
-    <location id="id1" x="256" y="-96">
-      <name x="246" y="-85">end</name>
-    </location>
-    <location id="id2" x="-128" y="-96">
-      <name x="-152" y="-80">waits</name>
-    </location>
-    <location id="id3" x="-320" y="-96">
-      <name x="-336" y="-80">idle</name>
-    </location>
-    <init ref="id3"/>
-    <transition>
-      <source ref="id0"/>
-      <target ref="id1"/>
-      <label kind="select" x="128" y="-312">vt:int[0,N_C],
-sg:int[0,1]</label>
-      <label kind="synchronisation" x="128" y="-280">vote[Voter_5_id]!</label>
-      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_5_mem_sg = sg, Voter_5_mem_vt = vt</label>
-      <nail x="160" y="-192"/>
-    </transition>
-    <transition>
-      <source ref="id2"/>
-      <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_5_mem_dec == 2 &amp;&amp; buff_mail [ Voter_5_id ] == 1</label>
-      <label kind="assignment" x="-56" y="16">buff_mail [ Voter_5_id ] = 0</label>
-      <nail x="-32" y="0"/>
-    </transition>
-    <transition>
-      <source ref="id2"/>
-      <target ref="id0"/>
-      <label kind="guard" x="-56" y="-232">Voter_5_mem_dec == 1</label>
-      <label kind="synchronisation" x="-56" y="-216">coll[Voter_5_id]!</label>
-      <nail x="-32" y="-192"/>
-    </transition>
-    <transition>
-      <source ref="id3"/>
-      <target ref="id2"/>
-      <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
-      <label kind="synchronisation" x="-256" y="-248">decl[Voter_5_id]!</label>
-      <label kind="assignment" x="-256" y="-232">Voter_5_mem_dec = inperson, sh_dec = inperson</label>
-      <nail x="-224" y="-192"/>
-    </transition>
-  </template>
-  <template>
-    <name>Voter_6</name>
-    <declaration>const int Voter_6_id = 6;
-int [ 0, 2 ] Voter_6_mem_dec; int [ 0, 1 ] Voter_6_mem_sg; int [ 0, N_C ] Voter_6_mem_vt;</declaration>
-    <location id="id0" x="64" y="-96"/>
-    <location id="id1" x="256" y="-96">
-      <name x="246" y="-85">end</name>
-    </location>
-    <location id="id2" x="-128" y="-96">
-      <name x="-152" y="-80">waits</name>
-    </location>
-    <location id="id3" x="-320" y="-96">
-      <name x="-336" y="-80">idle</name>
-    </location>
-    <init ref="id3"/>
-    <transition>
-      <source ref="id0"/>
-      <target ref="id1"/>
-      <label kind="select" x="128" y="-312">vt:int[0,N_C],
-sg:int[0,1]</label>
-      <label kind="synchronisation" x="128" y="-280">vote[Voter_6_id]!</label>
-      <label kind="assignment" x="128" y="-264">sh_vt = vt, sh_sg = sg, Voter_6_mem_sg = sg, Voter_6_mem_vt = vt</label>
-      <nail x="160" y="-192"/>
-    </transition>
-    <transition>
-      <source ref="id2"/>
-      <target ref="id0"/>
-      <label kind="guard" x="-56" y="0">Voter_6_mem_dec == 2 &amp;&amp; buff_mail [ Voter_6_id ] == 1</label>
-      <label kind="assignment" x="-56" y="16">buff_mail [ Voter_6_id ] = 0</label>
-      <nail x="-32" y="0"/>
-    </transition>
-    <transition>
-      <source ref="id2"/>
-      <target ref="id0"/>
-      <label kind="guard" x="-56" y="-232">Voter_6_mem_dec == 1</label>
-      <label kind="synchronisation" x="-56" y="-216">coll[Voter_6_id]!</label>
-      <nail x="-32" y="-192"/>
-    </transition>
-    <transition>
-      <source ref="id3"/>
-      <target ref="id2"/>
-      <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
-      <label kind="synchronisation" x="-256" y="-248">decl[Voter_6_id]!</label>
-      <label kind="assignment" x="-256" y="-232">Voter_6_mem_dec = inperson, sh_dec = inperson</label>
-      <nail x="-224" y="-192"/>
-    </transition>
-  </template>
-  <system>system Voter_1, Voter_2, Voter_3, Voter_4, Voter_5, Voter_6, Authority;</system>
+  <system>system Voter_1, Voter_2, Voter_3, Voter_4, Authority;</system>
   <queries>
     <query>
       <formula>A[]1==1</formula>
