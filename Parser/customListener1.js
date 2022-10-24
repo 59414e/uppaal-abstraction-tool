@@ -15,8 +15,11 @@ export default class CustomListener1 extends yagListener{
         // variables ctx list
         this._vlist = [];
 
-		// const vars
+		// const vars {id:val}
 		this._const_dict = {};
+
+		// arrays identifiers {id:dim} (incl. chans and other types)
+		this._arr_dict = {};
 
         // stmt ctx list
         this._stmtlist = [];
@@ -24,6 +27,7 @@ export default class CustomListener1 extends yagListener{
 		this.lhs_vars = new Set();
 		this.rhs_vars = new Set();
 
+		// arr of pairs [lhs,rhs]
 		this.assignment_list = [];
     }
 
@@ -75,6 +79,9 @@ export default class CustomListener1 extends yagListener{
 
 	// Exit a parse tree produced by yagParser#vdec.
 	exitVdec(ctx) {
+		if(ctx.dim){
+			this._arr_dict[ctx.vid.text]=this.joinToString(ctx.dim);
+		}
 	}
 
 
@@ -283,7 +290,11 @@ export default class CustomListener1 extends yagListener{
         let n = ctx.getChildCount();
 
 		if(ctx.vid){
-			str_arr.push(cb(ctx.vid.text))
+			if(ctx.init){
+				str_arr.push(ctx.vid.text)
+			}else{
+				str_arr.push(cb(ctx.vid.text))
+			}
 			for (let i = 1; i < n; i++) {
 				str_arr.push(this.renameWithCallbackStr(ctx.getChild(i),cb));
 			}

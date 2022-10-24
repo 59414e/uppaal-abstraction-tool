@@ -78,16 +78,46 @@ import * as path from 'path';
 
 // custom libs/files
 import CONFIG from './config.js';
-import { renamingPreproc, generateProduct } from './ModelGenerator/gen_product.js';
+import { renamingPreproc, generateProduct, substituteConst } from './ModelGenerator/gen_product.js';
 import { approximateLocalDomain, restictionOfLocalDomain } from './ModelGenerator/approx_ld.js';
 import { generateAbstractModel } from './ModelGenerator/gen_abstract.js';
+import UppaalXML from './Parser/uppaalxml.js';
+
+const NS_PER_SEC = 1e9;
+
+let _inputStr = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
+let _inputStrOrig = _inputStr;
 
 
-let inputStr = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
-let alphaStr = renamingPreproc(inputStr).toString();
+for(let nv = 1; nv<=3; nv++){
+    _inputStr = _inputStrOrig.replace(/(?<=const int N_V = )(\d)/, `${nv}`);
+    for(let nc = 1; nc<=3; nc++){
+        _inputStr = _inputStr.replace(/(?<=const int N_C = )(\d)/, `${nc}`);
+        let hrStart = process.hrtime();
+        
+        let model = new UppaalXML(_inputStr);
+        let _inputStr2 = substituteConst(model, {
+            'N_V':nv,
+            'N_C':nc
+        }).toString();
+
+        
+        // fs.writeFileSync(`./output_files/a1_${nv}_${nc}_may.xml`, doAbstraction1t(_inputStr))
+        fs.writeFileSync(`./output_files/a2_${nv}_${nc}_may.xml`, doAbstraction2t(_inputStr2, nv))
+        // doAbstraction1t(_inputStr);
+        // doAbstraction2t(_inputStr, nv)
+        let hrDiff = process.hrtime(hrStart);
+        let time = (hrDiff[0]*NS_PER_SEC + hrDiff[1])/1000000;
+        console.log(time);
+    }
+}
+
+
+
+// let alphaStr = renamingPreproc(inputStr).toString();
 // console.log(alphaStr);
 // let extModel = generateProduct(alphaStr);
-let prodStr = newlineFix(generateProduct(alphaStr).toString());
+// let prodStr = newlineFix(generateProduct(alphaStr).toString());
 // console.log(extModel.nta.template[0].location.length);
 
 
@@ -103,7 +133,9 @@ function convertMapping(myMapping){
     let res = {};
     for(let x in myMapping){
         res[x] = [...myMapping[x] ].map(s=>{
-            return s.split(',').map(v=>Number(v))
+            return s.split(';').flatMap(v=>{
+                return v.split(',').map(x=>Number(x))
+            })
         })
     }
     return res;
@@ -113,6 +145,119 @@ function convertMapping(myMapping){
 // Abstraction 1 
 // (remove mem_vt, mem_sg)
 // ================================
+
+function doAbstraction1t(inputStr){
+    let _ld = approximateLocalDomain(
+        inputStr,
+        {
+            vars: ['mem_sg', 'mem_vt'],
+            valInit: [0, 0]
+        },
+        "Voter"
+    );
+    let _d = convertMapping(_ld);
+
+    console.log(_ld);
+    console.log(_d);
+
+    let aparams = {
+        template: "Voter",
+        scope: "*",
+        val0: {
+            'mem_sg': 0,
+            'mem_vt': 0
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: _d,
+        argsN: [
+        ],
+        arrDict:{}
+    }
+
+    let amodel = generateAbstractModel(
+        inputStr, 
+        aparams
+    );
+
+    return amodel.toString();
+}
+
+function doAbstraction2t(inputStr, NV){
+    let _ld1 = approximateLocalDomain(
+        inputStr,
+        {
+            vars: ['mem_dec'],
+            valInit: [0]
+        },
+        "Voter"
+    );
+
+    let _ld2 = approximateLocalDomain(
+        inputStr,
+        {
+            vars: ['dec_recv'],
+            valInit: [Array.from({length:Number(NV)}, x=>0)],
+        },
+        "Authority"
+    );
+    
+    console.log(_ld1);
+    console.log(_ld2);
+    // return '';
+
+    let _d1 = convertMapping(_ld1);
+    let _d2 = convertMapping(_ld2);
+
+    console.log(_d1);
+    console.log(_d2);
+
+    let aparams1 = {
+        template: "Voter",
+        // scope: "*",
+        scope: 'id0,id1',
+        val0: {
+            'mem_dec': 0,
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: _d1,
+        argsN: [
+        ],
+    }
+
+    let aparams2 = {
+        template: "Authority",
+        // scope: "*",
+        scope: 'id4',
+        val0: {
+            'dec_recv': [Array.from({length:Number(NV)}, x=>0)],
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: _d2,
+        argsN: [
+        ],
+        arrDict:{
+            'dec_recv':NV
+        }
+    }
+
+    let amodel = generateAbstractModel(
+        inputStr, 
+        aparams1
+    );
+
+    amodel = generateAbstractModel(
+        amodel.toString(), 
+        aparams2
+    );
+
+    return amodel.toString();
+}
 
 if(false){
     let ld_1_on_templates = approximateLocalDomain(
@@ -160,7 +305,7 @@ if(false){
         {
             vars: ['Voter_1_mem_sg', 'Voter_1_mem_vt'],
             valInit: [0, 0]
-        }
+        },
     );
 
     let d_1_i1 = convertMapping(ld_1_on_instances1);
@@ -324,7 +469,7 @@ if(false){
 // (merge tally_i into tally_sum)
 // ================================
 
-if(true){
+if(false){
     let ld_2_on_templates = approximateLocalDomain(
         inputStr,
         {
@@ -332,13 +477,16 @@ if(true){
             valInit: [0, 0, 0]
         },
         "Authority",
-        false
     );
 
+    // console.log(ld_2_on_templates);
+    
     let d_2_t = convertMapping( 
         ld_2_on_templates
         // restictionOfLocalDomain(ld_2_on_templates, 0) 
     );
+
+    // console.log(d_2_t);
 
     let params_2_on_templates = {
         template: "Authority",
@@ -382,17 +530,21 @@ if(true){
         }
     );
 
+    // console.log(ld_2_on_instances);
+
     let d_2_i = convertMapping(
         restictionOfLocalDomain(ld_2_on_instances,0)
     );
 
+    console.log(d_2_i);
+
     let params_2_on_instances = {
-        template: "Authority",
+        template: "ExtendedMAS",
         scope: "*",
         val0: {
-            'tally_1': 0,
-            'tally_2': 0,
-            'tally_3': 0
+            'Authority_tally_1': 0,
+            'Authority_tally_2': 0,
+            'Authority_tally_3': 0
         },
         get argsR() {
             return Object.keys(this.val0)
@@ -402,14 +554,14 @@ if(true){
             {
                 name: 'tally_total',
                 val0: 0,
-                f: `tally_1+tally_2+tally_3`
+                f: `Authority_tally_1+Authority_tally_2+Authority_tally_3`
             }
         ],
     }
 
 
     let amodel_2_on_instances = generateAbstractModel(
-        inputStr, 
+        prodStr, 
         params_2_on_instances
     );
 

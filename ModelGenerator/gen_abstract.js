@@ -11,7 +11,6 @@ import yagParser from '../Parser/YetAnotherGrammar/yagParser.js';
 import CONFIG from '../config.js';
 import UppaalXML from '../Parser/uppaalxml.js';
 import CustomListener from '../Parser/customListener.js';
-import { kStringMaxLength } from 'buffer';
 // ============================================================
 
 
@@ -30,37 +29,6 @@ function generateAbstractModel(inputString, abstractionParams){
 
     const myHash = `_` + Date.now().toString(36); // a rand-ish string (might start with a number!!!)
     abstractionParams.myHash = myHash;
-    // if scope given by names - convert to ids using loc2id map
-    // const abstractionParams = {
-    //     template: "Voter",
-    //     scope: "*", 
-    //     val0: {
-    //         mem_sg: 0,
-    //         mem_vt: 0
-    //     },
-    //     get argsR() {
-    //         return Object.keys(this.val0)
-    //     },
-    //     argsN: [
-    //         {
-    //             name: "validVote",      // for now argsN are reset when argsR are assumed and eval'd when those are reset
-    //             val0: 0,
-    //             f: `mem_sg && mem_vt`   //? should we allow self-referencing? (e.g. to simulate reduce with acc)
-    //         },
-    //         {
-    //             name: "invalidVote",
-    //             val0: 1,
-    //             f: `!(mem_sg && mem_vt)`
-    //         },
-    //     ],
-    //     d: {
-    //         "id3": [[0,0]],
-    //         "id2": [[0,0]],
-    //         "id0": [[0,0]],
-    //         "id1": [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]]
-    //     },
-    //     myHash: myHash
-    // }
 
     // strip unreachable locations from the scope
     abstractionParams.scope = recomputeScope(model, abstractionParams);
@@ -91,16 +59,24 @@ function ldeVarName(locationId, myHash){
 }
 
 function ldeToStringArgs(locationId, myHash, argsR){
-    return argsR.map((v,i)=>`${ldeVarName(locationId, myHash)}[${myHash}][${i}]`).join(',');
+    // return argsR.map((v,i)=>`${ldeVarName(locationId, myHash)}[${myHash}][${i}]`).join(',');
+    return `${ldeVarName(locationId, myHash)}[${myHash}]`;
 }
 
 
-function ldeVarNameOf(locationId, myHash, argsR, varName){
-    return `${ldeVarName(locationId, myHash)}[${myHash}][${argsR.indexOf(varName)}]`;
+function ldeVarNameOf(locationId, myHash, argsR, varName, arrDict={}){
+    if(arrDict.hasOwnProperty(varName)){
+        return `${ldeVarName(locationId, myHash)}[${myHash}]`;
+    }else{
+        return `${ldeVarName(locationId, myHash)}[${myHash}][${argsR.indexOf(varName)}]`;
+    }
+    
+    // todo: add left padding for the arrInd!!! (atm working version for either arr or vars, w/o mixing)
+    // return `${ldeVarName(locationId, myHash)}[${myHash}]`;
 }
 
-function abstractVarNameFactory(locationId, myHash, argsR){
-    return (x)=>ldeVarNameOf(locationId, myHash, argsR, x)
+function abstractVarNameFactory(locationId, myHash, argsR, arrDict={}){
+    return (x)=>ldeVarNameOf(locationId, myHash, argsR, x, arrDict)
 }
 
 function abstractFunCallFactory(locationId, myHash, argsR){
@@ -117,12 +93,20 @@ function abstractFunCallFactory(locationId, myHash, argsR){
 function ldeConstVarDecString(params){
     let str = '';
     let varsLen = params.argsR.length;
+    if(params.hasOwnProperty('arrDict')){
+        for(let p in params['arrDict']){
+            varsLen += params['arrDict'][p] - 1;
+        }
+    }
     // for (let locationId in params.d) {
     for(let locationId of params.scope){
         let domLen = params.d[locationId].length;
         let domVal = JSON.stringify(params.d[locationId]).replace(/\[/g, '\{').replace(/\]/g, '\}');
         str += `const int ${ldeVarName(locationId, params.myHash)}[${domLen}][${varsLen}] = ${domVal};\n`
     }
+
+    str += `const int ${CONFIG.generateAbstraction.ld_elem_namePrefix}0_${params.myHash}[${varsLen}] = {${Object.values(params.val0).join(',')}};\n`
+    
     return str;
 }
 
@@ -169,6 +153,8 @@ function bar(model, params) {
             params.scope.indexOf(t.src) === -1 &&
             params.scope.indexOf(t.trg) !== -1
         );
+
+        if(CONFIG.debug)console.log(`${t.src}->${t.trg} (${enterEdge}-${innerEdge}-${leaveEdge})`);
         
         // remove argsR vars shadowed by select (if any)
         let selectVars = [];
@@ -184,13 +170,14 @@ function bar(model, params) {
         refinedParams.trg = t.trg;
 
         // name mappers must be defined for all members of the original argsR
-        refinedParams.abstractVarNameOf = abstractVarNameFactory(t.src,params.myHash,params.argsR)
+        refinedParams.abstractVarNameOf = abstractVarNameFactory(t.src,params.myHash,params.argsR, params.arrDict)
         refinedParams.abstractFunCallOf = abstractFunCallFactory(t.src,params.myHash,params.argsR)
         
         // return if argsR are fully shadowed by a select label - no changes should be applied
         if(refinedParams.argsR.length===0){
             return t;
         }
+
 
         if(t.guard){
             // inner OR leave edge type
@@ -208,14 +195,14 @@ function bar(model, params) {
             // }
         }
 
-        if(t.assignment){
+        if(true){
             // let res = generateAbstractLabelString(t.assignment, refinedParams);
-            let res = t.assignment;
+            let res = t.assignment || '';
             
             if(innerEdge || enterEdge){
             // if(params.scope.indexOf(t.src) === -1 && params.scope.indexOf(t.trg) !== -1){
                 // enter edge - append the reset block
-
+                console.log("@");
                 res = [
                     res,
                     updateArgsNFunctionCallString(params),
@@ -241,13 +228,15 @@ function bar(model, params) {
                 ].filter(s=>s.length>0).join(',\n')
             }
 
-
             // always true atm (until refined)
-            if (t.assignment.replace(/\s*/g,'') !== res.replace(/\s*/g,'')) {
+            if (!t.assignment || t.assignment.replace(/\s*/g,'') !== res.replace(/\s*/g,'')) {
                 addNewSelectLabel = true;
                 t.assignment = res;
             } 
 
+            if(enterEdge && !innerEdge){
+                addNewSelectLabel = false;
+            }
             // todo: argsR must not appear on lhs (this would be an attempt to assign to a const var)
             // todo: argsR reset should only appear when needed
         }
@@ -310,7 +299,14 @@ function updateArgsRFunctionCallString(locationId, params){
 }
 
 function resetArgsRFunctionCallString(params){
-    let str = `_set_argsr_values_${params.myHash}(${Object.values(params.val0).join(',')})`
+    //let str = `_set_argsr_values_${params.myHash}(${Object.values(params.val0).join(',')})`
+    let varsLen = params.argsR.length;
+    if(params.hasOwnProperty('arrDict')){
+        for(let p in params['arrDict']){
+            varsLen += params['arrDict'][p] - 1;
+        }
+    }
+    let str = `_set_argsr_values_${params.myHash}(${CONFIG.generateAbstraction.ld_elem_namePrefix}0_${params.myHash})`
     return str;
 }
 
@@ -324,9 +320,47 @@ function resetArgsNFunctionCallString(params){
 }
 
 function generateAssignFunctionDecString(params){
+    let varsLen = params.argsR.length;
+    if(params.hasOwnProperty('arrDict')){
+        for(let p in params['arrDict']){
+            varsLen += params['arrDict'][p] - 1;
+        }
+    }
+
     let str = `void _set_argsr_values_${params.myHash}(`;
-    str += params.argsR.map(v=>`int _val_of_${v}`).join(', ');
-    str += `){\n\t${params.argsR.map(v=>v+'= _val_of_'+v+';').join('\n\t')}\n}`
+
+    str += `const int &_curr_vals[${varsLen}]`;
+
+    // str += params.argsR.map(v=>{
+        // if(params.hasOwnProperty('arrDict') && params['arrDict'].hasOwnProperty(v)){
+        // return `const int& _val_of_${v}[${params['arrDict'][varsLen]}]`;
+        // }else{
+            // return `const int _val_of_${v}`;
+        // }
+    // }).join(', ');
+
+    let jj=0;
+    str += `){\n\t${params.argsR.map((v,ind)=>{
+        if(params.hasOwnProperty('arrDict') && params['arrDict'].hasOwnProperty(v)){
+            return Array.from(
+                {length: params['arrDict'][v]},
+                (k,val)=>`${v}[${val}]=_curr_vals[${jj++}];`
+            ).join('\n\t')
+        }else{
+            return `${v}=_curr_vals[${jj++}];`
+        }
+    }).join('\n\t')}\n}`
+        
+    // str += `){\n\t${params.argsR.map(v=>{
+    //     if(params.hasOwnProperty('arrDict') && params['arrDict'].hasOwnProperty(v)){
+    //         return Array.from(
+    //             {length: params['arrDict'][v]},
+    //             (k,val)=>`${v}[${val}]=_val_of_${v}[${val}];`
+    //         ).join('\n\t')
+    //     }else{
+    //         return v+'= _val_of_'+v+';'
+    //     }
+    // }).join('\n\t')}\n}`
 
     str += `\nvoid _update_argsn_values_${params.myHash}(`;
     str += params.argsN.map(z => `bool reset_${z.name}`).join(',')

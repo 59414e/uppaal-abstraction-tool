@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
         <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'><nta>
-  <declaration>// Place global declarations here.&#xD;
-const int N_V = 4;&#xD;
+  <declaration>const int __d_vals_at_id0__l9dwtoc0[1][2] = {{0,0}};
+const int __d_vals_at_id1__l9dwtoc0[8][2] = {{0,0},{0,1},{0,2},{0,3},{1,0},{1,1},{1,2},{1,3}};
+const int __d_vals_at_id2__l9dwtoc0[1][2] = {{0,0}};
+const int __d_vals_at_id3__l9dwtoc0[1][2] = {{0,0}};
+// Place global declarations here.&#xD;
+const int N_V = 6;&#xD;
 const int N_C = 3;&#xD;
 &#xD;
 chan decl[N_V+1];&#xD;
@@ -29,11 +33,11 @@ int[0,2] mem_dec;&#xD;
 int[0,1] mem_sg;&#xD;
 int[0,N_C] mem_vt;
 
-void _set_argsr_values__l9cpum1h(int _val_of_mem_sg, int _val_of_mem_vt){
+void _set_argsr_values__l9dwtoc0(int _val_of_mem_sg, int _val_of_mem_vt){
 	mem_sg= _val_of_mem_sg;
 	mem_vt= _val_of_mem_vt;
 }
-void _update_argsn_values__l9cpum1h(){
+void _update_argsn_values__l9dwtoc0(){
 	
 }</declaration>
     <location id="id0" x="64" y="-96">
@@ -53,35 +57,51 @@ void _update_argsn_values__l9cpum1h(){
       <source ref="id0"/>
       <target ref="id1"/>
       <label kind="select" x="128" y="-312">vt:int[0,N_C],&#xD;
-sg:int[0,1]</label>
-      <label kind="synchronisation" x="128" y="-280">vote[id]!</label>
-      <label kind="assignment" x="128" y="-264">sh_vt=vt,&#xD;
+sg:int[0,1],
+_l9dwtoc0:int[0,0]</label>
+      <label kind="synchronisation" x="128" y="-280">vote [ id ]!</label>
+      <label kind="assignment" x="128" y="-264">_set_argsr_values__l9dwtoc0(__d_vals_at_id0__l9dwtoc0[_l9dwtoc0][0],__d_vals_at_id0__l9dwtoc0[_l9dwtoc0][1]),
+_update_argsn_values__l9dwtoc0(),
+sh_vt=vt,&#xD;
 sh_sg=sg,&#xD;
 mem_sg=sg,&#xD;
-mem_vt=vt</label>
+mem_vt=vt,
+_update_argsn_values__l9dwtoc0(),
+_set_argsr_values__l9dwtoc0(0,0)</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
+      <label kind="select">_l9dwtoc0:int[0,0]</label>
       <label kind="guard" x="-56" y="0">mem_dec==2 &amp;&amp; buff_mail[id]==1</label>
-      <label kind="assignment" x="-56" y="16">buff_mail[id]=0</label>
+      <label kind="assignment" x="-56" y="16">_set_argsr_values__l9dwtoc0(__d_vals_at_id2__l9dwtoc0[_l9dwtoc0][0],__d_vals_at_id2__l9dwtoc0[_l9dwtoc0][1]),
+_update_argsn_values__l9dwtoc0(),
+buff_mail[id]=0,
+_update_argsn_values__l9dwtoc0(),
+_set_argsr_values__l9dwtoc0(0,0)</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
       <source ref="id2"/>
       <target ref="id0"/>
+      <label kind="select">_l9dwtoc0:int[0,0]</label>
       <label kind="guard" x="-56" y="-232">mem_dec==1</label>
-      <label kind="synchronisation" x="-56" y="-216">coll[id]!</label>
+      <label kind="synchronisation" x="-56" y="-216">coll [ id ]!</label>
       <nail x="-32" y="-192"/>
     </transition>
     <transition>
       <source ref="id3"/>
       <target ref="id2"/>
-      <label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
-      <label kind="synchronisation" x="-256" y="-248">decl[id]!</label>
-      <label kind="assignment" x="-256" y="-232">mem_dec=inperson,&#xD;
-sh_dec=inperson</label>
+      <label kind="select" x="-256" y="-264">inperson:int[1,2],
+_l9dwtoc0:int[0,0]</label>
+      <label kind="synchronisation" x="-256" y="-248">decl [ id ]!</label>
+      <label kind="assignment" x="-256" y="-232">_set_argsr_values__l9dwtoc0(__d_vals_at_id3__l9dwtoc0[_l9dwtoc0][0],__d_vals_at_id3__l9dwtoc0[_l9dwtoc0][1]),
+_update_argsn_values__l9dwtoc0(),
+mem_dec=inperson,&#xD;
+sh_dec=inperson,
+_update_argsn_values__l9dwtoc0(),
+_set_argsr_values__l9dwtoc0(0,0)</label>
       <nail x="-224" y="-192"/>
     </transition>
   </template>

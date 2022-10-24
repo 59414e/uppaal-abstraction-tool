@@ -1,0 +1,21 @@
+Abstract model (a1_1_1_may) :
+ -- Formula is satisfied.
+ -- States stored : 19 states
+ -- States explored : 19 states
+ -- CPU user time used : 0 ms
+ -- Virtual memory used : 30144 KiB
+ -- Resident memory used : 7436 KiB
+Abstract model (a1_1_2_may) :
+ -- Formula is satisfied.
+ -- States stored : 21 states
+ -- States explored : 21 states
+ -- CPU user time used : 0 ms
+ -- Virtual memory used : 30156 KiB
+ -- Resident memory used : 7380 KiB
+Abstract model (a1_1_3_may) :
+ -- Formula is satisfied.
+ -- States stored : 23 states
+ -- States explored : 23 states
+ -- CPU user time used : 0 ms
+ -- Virtual memory used : 30180 KiB
+ -- Resident memory used : 7528 KiB

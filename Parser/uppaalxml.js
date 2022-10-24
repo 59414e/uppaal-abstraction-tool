@@ -103,12 +103,16 @@ export default class UppaalXML {
                                 return t.label?.filter(l => l.$.kind == "assignment")[0]?._
                             },
                             set: function (_val) {
-                                let assignmentLabels = t.label.filter(l => l.$.kind == "assignment");
-                                if(assignmentLabels.length!=0){
+                                let assignmentLabels = t.label?.filter(l => l.$.kind == "assignment");
+                                if(assignmentLabels && assignmentLabels.length!=0){
                                     assignmentLabels[0]._ = _val;
                                 }else{
                                     let newLabel = {$: {kind: "assignment"}, _: _val};
-                                    t.label = [...t.label, newLabel];
+                                    if(!t.label){
+                                        t.label = [newLabel];
+                                    }else{
+                                        t.label = [...t.label, newLabel];
+                                    }
                                 }
                             }
                         },
@@ -154,6 +158,7 @@ export default class UppaalXML {
                         }
                     })
                 })
+
             }
             
             
@@ -259,19 +264,32 @@ export default class UppaalXML {
     /**
      * Parses comma separated list of <id>:<range> into an array with elements with <name=id> and <type=range>
      * @param {string} _label - raw/unformatted content of a select label tag
+     * @param {enum} _format - "1" arr of obj, "2" arr of arr, "3" obj
      * @returns {Array.<myVar>} 
      */
-    getSelectLabelVars(_label){
+    getSelectLabelVars(_label, _format=1){
         let str = _label.replace(/\s/g, "");                        // remove whitespces
         // const reg = /(?:[^,:]+):([^\[\]:]*(?:\[[^\[\]:]*\])*)/gm;
         const reg = /([^,:]+):([^\[\]:,]*(?:\[[^\[\]:]*\])*)/gm;   // match <ID>:<TYPE> pairs (joined by ',')
         const matches = str.matchAll(reg);
-        let res = [];
+        let res = _format===3 ? {} : [];
         for (const m of matches) {
-            res.push({
-              "name": m[1],
-              "type": m[2]  
-            })
+            if(_format===1){
+                res.push({
+                    "name": m[1],
+                    "type": m[2]  
+                })
+            }else if(_format===2){
+                res.push([
+                    m[1],
+                    m[2]  
+                ])
+            }else if(_format===3){
+                if(res.hasOwnProperty(m[1])){
+                    console.log(`WARN: the model contains an edge where select ${m[1]} does shadow an existing select.`)
+                }
+                res[m[1]] = m[2];
+            }
         }
         return res;
     }

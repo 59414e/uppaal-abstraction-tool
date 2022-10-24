@@ -16,6 +16,14 @@ Notes:
 
 // TODO: justification on why we can re-use the d for e.g. one voter in abstraction for conf. with X-voters...
 
+QOL todos on preprocessing:
+- auto-substitute const val occurrences and typedefs
+- do the check for the shadowing
+- use antlr4 to parse the model into obj
+    - with arrs of {assignment, guard, select}-labels
+    - parse tree with pointers to var objects, where latter have setter/getter on the name/type/value
+    - etc.
+
 */
 
 // ============================================================
@@ -35,6 +43,7 @@ import CustomListener from '../Parser/customListener1.js';
 // ============================================================
 
 function generateProduct(inputString) {
+    if(CONFIG.debug)console.log(`App: starting product generation at ${Date.now()}`);
     const LID_SEP = CONFIG.preprocessModel.locationIdSeparator; 
     const SINGLETON_NAME = CONFIG.preprocessModel.productName;
     const SAVE_TO_FILE = CONFIG.preprocessModel.saveIntermediateModel;
@@ -49,22 +58,34 @@ function generateProduct(inputString) {
     let numberOfAgents = numberOfTemplates;
     
     let sync_edges_queue = {};
-    let xlocation_ids = [];
+    // let xlocation_ids = [];
+    let xlocation_ids = new Set();
+
 
     // create an initial location
     let xlocation_0 = [];
     for (let i = 0; i < numberOfAgents; i++) {
         xlocation_0.push(model.nta.template[i].init[0].$.ref);
     }
-    xlocation_ids.push(xlocation_0.join(LID_SEP));
+    // xlocation_ids.push(xlocation_0.join(LID_SEP));
+    xlocation_ids.add(xlocation_0.join(LID_SEP));
     let xedges = [];
 
     let myq = [xlocation_0.join(LID_SEP)];
 
+    let agentLocationToEdgesMap = {};
+    for (let i = 0; i < numberOfAgents; i++) {
+        agentLocationToEdgesMap[i] = model.nta.template[i].location.map(l=>l.$.id).reduce((acc,el)=>(acc[el]=[],acc),{});
+        model.nta.template[i].transition.forEach(edge=>{
+            agentLocationToEdgesMap[i][edge.src].push(edge)
+        })
+    }
+
     while (myq.length != 0) {
         let curr_loc = myq.shift().split(LID_SEP);
         for (let i = 0; i < numberOfAgents; i++) {
-            let local_edges = model.nta.template[i].transition.filter(t => t.src == curr_loc[i]);
+            // let local_edges = model.nta.template[i].transition.filter(t => t.src == curr_loc[i]);
+            let local_edges = agentLocationToEdgesMap[i][curr_loc[i]];
             for (let j = 0; j < local_edges.length; j++) {
                 let edge = local_edges[j];
                 // todo: check if the edge has a synchronisation label
@@ -103,7 +124,7 @@ function generateProduct(inputString) {
                 }
             }
         }
-
+        
         for (const [key, val] of Object.entries(sync_edges_queue)) {
             for (let i = 0; i < val['!'].length; i++) {
                 for (let j = 0; j < val['?'].length; j++) {
@@ -133,13 +154,20 @@ function generateProduct(inputString) {
         }
         sync_edges_queue = [];
 
+        
         // add to queue if not in xlocation_ids already
         xedges.forEach(edge => {
-            if (xlocation_ids.indexOf(edge.trg) == -1) {
-                xlocation_ids.push(edge.trg);
+            // if (xlocation_ids.indexOf(edge.trg) == -1) {
+            //     xlocation_ids.push(edge.trg);
+            //     myq.push(edge.trg);
+            // }
+            if (!xlocation_ids.has(edge.trg)) {
+                xlocation_ids.add(edge.trg);
                 myq.push(edge.trg);
             }
         })
+
+        // console.log(xlocation_ids.size);
     }
 
     // translate the results into uppaalXML
@@ -161,13 +189,14 @@ function generateProduct(inputString) {
         fs.writeFileSync(CONFIG.OUTPUT.DIR + '/after_product.xml', result.toString());
     }
     console.log("App: gen_product finished");
-
+    if(CONFIG.debug)console.log(`App: ending product generation at ${Date.now()}`);
     return result;
 }
 
 
 
-function renamingPreproc(inputString) {    
+function renamingPreproc(inputString) {   
+    if(CONFIG.debug)console.log(`App: starting renaming at ${Date.now()}`); 
     const SAVE_TO_FILE = CONFIG.preprocessModel.saveIntermediateModel || false;
     const MY_HASH = `_` + Date.now().toString(36); // a rand-ish string (might start with a number!!!)
     
@@ -311,6 +340,7 @@ function renamingPreproc(inputString) {
         fs.writeFileSync(CONFIG.OUTPUT.DIR + '/after_rename.xml', model.toString());
     }
     console.log("App: renaming finished");
+    if(CONFIG.debug)console.log(`App: ending renaming at ${Date.now()}`); 
     return model;
 }
 
@@ -388,5 +418,85 @@ system Process;
 }
 
 
-export {renamingPreproc, generateProduct, getConstVars};
+// constReplacer
+
+// only global decs overwrite
+function substituteConst(model, overWriteDict={}){
+    let {tree:gtree, myListener:glistener} = parseTreeWalk(model.global, 'translation');
+
+    let gConstDict = {
+        ...glistener._const_dict,
+        ...overWriteDict
+    };
+    let grenameCallback = genDictReplacer(gConstDict);
+
+    const SELECT_RANGE_REG =  /[^\[]*\[([^,]+),([^,]+)\]/m;      // pattern: `selector:int[<1>,<2>]`
+
+
+    // process global declarations
+    model.global = glistener.renameWithCallbackStr(gtree, grenameCallback)
+
+    model.getTemplateNames().forEach(_t => {
+        let {tree:ttree, myListener:tlistener} = parseTreeWalk(model[_t].declaration[0], 'translation');
+        let tConstDict = {
+            ...gConstDict,
+            ...tlistener._const_dict,
+        };
+        let trenameCallBack = genDictReplacer(tConstDict);
+
+
+        if(model[_t].hasOwnProperty("parameter")){
+            let {tree:t, myListener:l} = parseTreeWalk(model[_t].parameter[0]+';', 'statement');
+            model[_t].parameter[0] = l.renameWithCallbackStr(t, trenameCallBack).slice(0,-1)
+        }
+
+        // process local declarations
+        model[_t].declaration[0] = tlistener.renameWithCallbackStr(ttree, trenameCallBack)
+
+        // process local edges
+        model[_t].transition.forEach(edge=>{
+            if(edge["select"]){
+                edge["select"] = model.getSelectLabelVars(edge["select"]).map(x=>{
+                    let m = x.type.match(SELECT_RANGE_REG);
+                        let intFrom = trenameCallBack(m[1]);
+                        let intTo = trenameCallBack( m[2]);
+                        
+                        return `${x.name}:int[${intFrom},${intTo}]`;
+                }).join(',\n')
+            }
+            if(edge["synchronisation"]){
+                let m = edge["synchronisation"].match(/([^\[]*)\[([^\]]*)\](.)/)
+                if(m && m[2]){
+                    let ch = m[1];
+                    let dim = m[2];
+                    let symb = m[3];
+                    let {tree:t, myListener:l} = parseTreeWalk(dim, 'expr');
+                    let str = l.renameWithCallbackStr(t,trenameCallBack);
+                    
+                    edge["synchronisation"] = `${ch}[${str}]${symb}`;
+                }
+            }
+            ['assignment', 'guard'].forEach((kind)=>{
+                if(edge[kind]){
+                    let {tree:t, myListener:l} = parseTreeWalk(edge[kind]+';', 'statement');
+                    edge[kind] = l.renameWithCallbackStr(t, trenameCallBack).slice(0,-1)
+                }
+            })
+        })
+    });
+
+    return model;
+}
+
+function genDictReplacer(dict){
+    return (str)=>{
+        if(dict.hasOwnProperty(str))
+            return dict[str];
+        else 
+            return str;
+    }
+}
+
+
+export {renamingPreproc, generateProduct, getConstVars, substituteConst};
 export default {};

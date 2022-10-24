@@ -14,6 +14,7 @@
 // todo:
 // * add const preproc
 // * do not allow arrays (arr identifiers atm will be processed as variables potentially causing the logical errors)
+// * during the parsing of assignment_stmt create a templateString function for a RHS (with params as vids, e.g. enclosed in ${} to be "plugged in")
 
 // QOL todo:
 // * add colours to console error, warn, info (or import chalk module)
@@ -40,10 +41,11 @@ import CustomListener from '../Parser/customListener1.js';
 // ============================================================
 
 // todo: substitute arrays with maps for faster look-up
-function approximateLocalDomain(inputString, varInfo, targetTemplate, upperApprox=true){
+function approximateLocalDomain(inputString, varInfo, targetTemplate=CONFIG.preprocessModel.productName, upperApprox=true){
+    if(CONFIG.debug)console.log(`App: starting local domain approximation at ${Date.now()}`);
     // read XML for the concrete model
     let model = new UppaalXML(inputString);
-
+    
     // let vvars = ['mem_dec', 'mem_sg', 'mem_vt'];
     // let val0 = [0,0,0]; 
     
@@ -54,36 +56,25 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
     const SINGLETON_NAME = targetTemplate || model.getTemplateNames()[0]; 
     const INT16_MAX = CONFIG.approximateDomain.int16Max;
     
-
     // if(SINGLETON_NAME != CONFIG.preprocessModel.productName){
     //     console.log(`WARN, expected singleton name to be ${CONFIG.preprocessModel.productName}, but recevied ${SINGLETON_NAME}`);
     // }
 
-    let constDict = getConstVars(model.global +'\n'+ model[SINGLETON_NAME].declaration[0]);
-    let varDomain = getVarDomain(model.global +'\n'+ model[SINGLETON_NAME].declaration[0]);
+    let {tree:gtree, myListener:glistener} = parseTreeWalk(model.global +'\n'+ model[SINGLETON_NAME].declaration[0], 'translation')
 
-    for(let v in varDomain){
-        let chunk = varDomain[v].replace(/[\,\[\]]+/gm,'').split(' ').filter(x=>x)
-        if(chunk[0] === 'chan' || chunk[0] === 'const')delete varDomain[v];
-        else if(chunk[0]=== 'int'){
-            if(chunk[1] && chunk[2]){
-                varDomain[v] = [
-                    Number(retrieveNumberOrDictEntry(chunk[1], constDict)),
-                    Number(retrieveNumberOrDictEntry(chunk[2], constDict))
-                ];
-            }else{
-                varDomain[v] = [1-INT16_MAX, INT16_MAX]
-            }
-        }
-    }
-    // console.log(varDomain);
+    let constDict = getConstVars(model.global +'\n'+ model[SINGLETON_NAME].declaration[0]);
+    let arrDict = computeArrDim(glistener._arr_dict); // assuming const-replacement was performed
+
+    let varDomain = getVarDomain(model.global +'\n'+ model[SINGLETON_NAME].declaration[0], constDict);
     
+        
     let locList = model.getLocationsOf(SINGLETON_NAME);    // e.g., ["id0__id0", "id0__id1"]
     let adjList = model.adjacencyListOf(SINGLETON_NAME);   
     let locToEdgeMap = model.edgeMapOf(SINGLETON_NAME);    
     
     // compute reachability index r for each location
     let reachInd = model.reachabilityVectorOf(SINGLETON_NAME);  // excludes I-diagonal (i.e., loops)  
+    // console.log(`locllist.length = ${locList.length}`);
     
     // filter out the edges, where vvars appear (on the lhs of updates) or (in guards), except from ones being selector
     for(let i=0;i<locList.length;i++){
@@ -130,7 +121,7 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
     
     function updateLocalDomain(ld, loc, arr, _upperApprox = upperApprox){
         if(_upperApprox){
-            [...arr].forEach(val=>ld[loc].add(Array.isArray(val) ? val.join(',') : val))
+            [...arr].forEach(val=>ld[loc].add(Array.isArray(val) ? val.join(';') : val))
         }else{
             if(ld[loc].has('*')){
                 ld[loc] = new Set([...arr])
@@ -141,10 +132,16 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
                 
             }
         }
+
+        if(CONFIG.debug){
+            console.log(`Updated d(${loc}) = [${[...ld[loc]].join(';')}]`);
+        }
     }
 
-    updateLocalDomain(localDomain, initial_location, [val0.join(',')])
+    updateLocalDomain(localDomain, initial_location, [val0.join(';')])
 
+
+    
     // console.log(localDomain[initial_location]);
     // console.log(localDomain[initial_location]);
     // localDomain[initial_location].add(val0.join(','));
@@ -158,6 +155,7 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
         locToEdgeMap[src][trg].forEach(edge=>{
             if(CONFIG.debug)console.log(`Processing an edge from ${src} to ${trg}`);
             if(edge.blank){
+                if(CONFIG.debug)console.log(`Blank => copied the src local domain`);
                 updateLocalDomain(localDomain, trg, localDomain[src])
                 // localDomain[src].forEach(v=>localDomain[trg].add(v)); // ld[trg] = union( ld[trg] , ld[src] )
             }else{
@@ -200,15 +198,20 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
         }
     }
     
+    console.log("App: approx_ld finished");
+    if(CONFIG.debug)console.log(`App: ending local domain approximation at ${Date.now()}`);
     return localDomain;
 
     
     // note: uses cosntDict (global var)
     function procEdgeLabels(edge, vvars, model, _ld, _src, _trg){
         if(_ld[_src].has('*'))console.log('ERR, encountered folded * for the ld...')
-        let ld_src = new Set([..._ld[_src]].map(x=>x.split(',')));
+        let ld_src = new Set([..._ld[_src]].map(x=>x.split(';')));
         // treats non-target variables evaluations as "flat" (i.e., non-vector)
         let etaRestriction = {}
+
+        if(CONFIG.debug)console.log(_ld[_src]);
+
 
         let sres = edge.select ? model.getSelectLabelVars(edge.select) : [];
         let svars = sres.map(x=>x['name']);
@@ -229,12 +232,15 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
                 }
             }
         })
+        // for each select prod element do procWithContext
+        // ...
+
+
 
         // filter out vvars that are not shadowed by select
         let vvarsNotInSelect = [...vvars].filter(v=>svars.indexOf(v)==-1);
-    
         // list of assignment statemements
-        let assignmentList = edge.assignment.replace(/\s*/g,'').split(',')
+        let assignmentList = edge?.assignment?.replace(/\s*/g,'').split(',') || [];
     
         // LHS/RHS temp split
         let temp = assignmentList.map(stmt=>stmt.split(/=(.+)/s).slice(0,2))
@@ -242,13 +248,22 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
         // if LHS from the assignment is not in vvars and neither appears on the RHS later - ignore that
         assignmentList = assignmentList.filter((el,i)=>{
             let vid = temp[i][0];
-            if(vvarsNotInSelect.indexOf(temp[i][0])>=0){
+            
+            const ARR_EL_REG = /([^\[\]]+)\[([^\[\]]+)\]/;
+            let arrMatch = vid.match(ARR_EL_REG)
+            if(arrMatch){
+                vid = arrMatch[1];
+                let arrInd = (arrMatch[2]);
+                // todo: check var occurence in arrInd as well
+            }
+
+            if(vvarsNotInSelect.indexOf(vid)>=0){
                 return true;
             }
     
             let appearsInRHS = false;
             for(let j=i+1;j<assignmentList.length;j++){
-                if(temp[1].includes(vid)){
+                if(temp[j].includes(vid)){
                     appearsInRHS = true;
                     break;
                 }
@@ -260,130 +275,220 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate, upperAppro
         let ares = assignmentList.length>0 ? 
             parseEdgeLabel('{'+assignmentList.join(';')+';}', 'statement') : null;
         let avars = ares?.vars?.filter(v=>svars.indexOf(v)==-1) || [];
-    
+        if(CONFIG.debug)console.log({avars});
+
         let gres = edge.guard ? parseEdgeLabel(edge.guard) : null;
         let gvars = gres?.vars || [];
         
         let intersectionA = ares?.lhs?.filter(x=>vvarsNotInSelect.includes(x)) || [];
         let intersectionG = gvars?.filter(x=>vvarsNotInSelect.includes(x)) || [];
-        if(intersectionA.length==0 && intersectionG.length==0)return;
+        // console.log(intersectionA, intersectionG);
+        // if(intersectionA.length==0 && intersectionG.length==0)return;
     
-        let gsat = edge.guard ? parseSimpleGuardAsDict(edge.guard, vvars) : {};
-        let noSatSelect = false;
-    
-        // note: this might not produce finest answers for guards with OR
-        // todo: refactor
-    
-        for(let el of ld_src){
-            vvars.forEach((v,ind)=>{
-                if(!etaRestriction[v])etaRestriction[v]=[];
-                if(etaRestriction[v].indexOf(el[ind])==-1)etaRestriction[v].push(el[ind]);
+        let selectEvalSpace = [null];
+        if(svars.length!=0){
+            selectEvalSpace = svars.length>1 ? cartesianProduct(...svars.map(x=>etaRestriction[x])) : cartesianProduct(...svars.map(x=>etaRestriction[x])).map(x=>[x]);
+        }
+        
+        if(CONFIG.debug)console.log({etaRestriction});
+        if(CONFIG.debug)console.log({selectEvalSpace});
+
+        let etaRestriction1 = etaRestriction;
+        let assignmentList1 = [...assignmentList]
+        for(let si=0;si<selectEvalSpace.length;si++){
+            // do substitution for all [non-alpha-numeric-or-_-symbol]<select>[non-alpha-numeric-or-_-symbol]
+            etaRestriction = {...etaRestriction1};
+            assignmentList = [...assignmentList1];
+            let edgeGuard = edge.guard || '';
+            // let edgeAssign = assignmentList || '';
+            // let edgeSync = edge.synchronisation || '';
+            let currSelectContext = selectEvalSpace[si] || [];
+            currSelectContext.forEach((v,ind)=>{
+                // replace all occurences of vvars[ind] with v in the guard/udpate
+                let sname =  svars[ind];
+                if(CONFIG.debug)console.log(`substitution of all occurences of ${sname} with ${v}`);
+                const vreg = new RegExp(`(?<=[^0-9a-zA-Z_])${sname}(?=[^0-9a-zA-Z_]*)`, 'gm');
+                etaRestriction[sname] = [v];
+                edgeGuard = edgeGuard.replace(vreg, v);
+                assignmentList = assignmentList.map(s=>s.replace(vreg, v)).map(x=>{
+                    if(CONFIG.debug)console.log(x);
+                    const arrReg = /(?<=[^\[\]]+)\[([^\]]+)\]/;                    
+                    return x.replace(arrReg, (m,p1)=>'['+eval(p1)+']')
+                })
             })
-        }
-    
-        // parse guards as assignments
-        // NOTE: symmetry is not considered atm, thus it should always be comparison var to literal (or const var)
-        Object.entries(gsat).forEach(x=>{
-            if(etaRestriction[x[0]] && etaRestriction[x[0]].indexOf(x[1])==-1){
-                noSatSelect = true;
-                // console.log(etaRestriction);
-                console.log(`WARN, no select ${x[0]} sats the guard ${edge.guard}`); 
-                // read as model contains redundant edges
-            }
-            etaRestriction[x[0]] = x[1];
-        })
-    
-        if(noSatSelect){
-            return;
-        }
 
-        // console.log(etaRestriction);
-        // take all possible evaluations for the remaining variables
-        avars.forEach(x=>{
-            if(!etaRestriction[x]){
-                if(varDomain.hasOwnProperty(x)){
-                    etaRestriction[x] = Array.from({length:varDomain[x][0]+varDomain[x][1]+1},(v,k)=>k+varDomain[x][0])
-                    // console.log(`for ${x} etaRestriction = ${etaRestriction[x]}`);
-                }else{
-                    etaRestriction[x] = Array.from({length:INT16_MAX*2},(v,k)=>k-1-INT16_MAX)
-                }
-            }
-        })
-    
-        let prodSize = 1;
-        for(let p in etaRestriction){
-            // if(vvarsNotInSelect.indexOf(p)==-1 && ares?.rhs?.indexOf(p)==-1)
-            if(vvarsNotInSelect.indexOf(p)==-1 && !(ares?.rhs?.indexOf(p)>=0))
-                delete etaRestriction[p];
-        }
-        
-        // resolve inner refs
-        etaRestriction = Object.entries(etaRestriction).map(x=>{
-            prodSize *= typeof x[1]=='string' && etaRestriction[x[1]] ? etaRestriction[x[1]].length : x[1].length
-            return {
-                "name":x[0],
-                "vals":typeof x[1]=='string' && etaRestriction[x[1]] ? etaRestriction[x[1]] : x[1]
-            }
-        })
-    
-        
-        // if(prodSize>10000){
-            if(CONFIG.debug)console.log(`Number of eta: ${prodSize}`);
-            // console.log(etaRestriction);
-        // }
-        let ld_temp = new Set();
-        for(let ii=0;ii<prodSize;ii++){
-            let etaCurr = {};
-            let k = ii;
-            
-            for(let jj=0;jj<etaRestriction.length;jj++){
-                let name = etaRestriction[jj].name;
-                let m = etaRestriction[jj].vals.length;
-                let val = etaRestriction[jj].vals[k%m];
-    
-                // console.log(`m=${m}, ii=${ii}, j=${jj}, k=${k}`);
-                // console.log(`Assuming ${name} = ${val}`);
-                etaCurr[name]=val;
-                k = Math.floor(k/m);
-            }
+            if(CONFIG.debug)console.log({assignmentList});
 
-            // skip etaCurr if not agree with ldsrc
-            if(!_ld[_src].has(vvars.map((v,ind)=>etaCurr[v]).join(',')))continue;
-    
-            // find the last assignemnt stmt where vvar appear => discard the suffix
+
+            if(CONFIG.debug)console.log({etaRestriction});
+
+            // let gsat = edge.guard ? parseSimpleGuardAsDict(edge.guard, vvars) : {};
+            let gsat = edgeGuard ? parseSimpleGuardAsDict(edgeGuard, vvars) : {};
             
-            if(ares){
-                ares?.listener?.assignment_list?.forEach(stm=>{
-                    let left = stm[0].getText();
-                    let right = stm[1];
-                    
-                    // console.log(`used to be ${ares.listener.joinToString(right)}`);
-                    let str = ares.listener.substituteStr(right, etaCurr);
-                    // console.log(`left = ${left}, right = ${str}`);
-                    etaCurr[left] = eval(str);
+        
+            // note: this might not produce finest answers for guards with OR
+            // todo: refactor
+            if(CONFIG.debug)console.log(ld_src);
+            if(CONFIG.debug)console.log(vvars);
+
+            for(let el of ld_src){
+                vvars.forEach((v,ind)=>{
+                    if(!etaRestriction.hasOwnProperty(v))etaRestriction[v]=[];
+                    if(etaRestriction[v].indexOf(el[ind])==-1)etaRestriction[v].push(el[ind]);
                 })
             }
 
-            // check etaCurr agrees with the domains
-            let okWithDomain = true;
-            vvars.forEach(v=>{
-                // console.log(vvars);
-                // console.log(varDomain);
-                // console.log(etaCurr);
-                if(varDomain[v].indexOf(etaCurr[v])==-1)okWithDomain=false;
+            etaRestriction = {
+                ...generateEvalSpace(
+                    varDomain, 
+                    Object.keys(varDomain).filter(
+                        v=>avars.indexOf(v)==-1
+                    ).reduce((acc,el)=>(acc[el]=true, acc), []),
+                    arrDict   
+                ),
+                ...etaRestriction
+            }
+
+            if(CONFIG.debug)console.log("before guardsat");
+            if(CONFIG.debug)console.log(etaRestriction);
+
+    
+            // parse guards as assignments
+            // NOTE: symmetry is not considered atm, thus it should always be comparison var to literal (or const var)
+            let noSatSelect = false;
+            if(CONFIG.debug)console.log("Gsat");
+            if(CONFIG.debug)console.log(gsat);
+            Object.entries(gsat).forEach(x=>{
+                // check if LHS refers to an array
+                const ARR_EL_REG = /([^\[\]]+)\[([^\[\]]+)\]/;
+                let arrMatch = x[0].match(ARR_EL_REG)
+                if(arrMatch){
+                    let arrName = arrMatch[1];
+                    let arrInd = arrMatch[2].match(/[a-zA-Z_]/) ? arrMatch[2] : eval(arrMatch[2]);
+                    let valFilter = (a)=>a[arrInd]=x[1];
+                    if(CONFIG.debug)console.log({arrName, arrInd});
+                    if(etaRestriction.hasOwnProperty(arrName)){
+                        etaRestriction[arrName]= etaRestriction[arrName].map(x=>x.split(',')).filter(valFilter).map(x=>x.join(','))
+                    }else{
+                        etaRestriction[arrName] = singleVarStateSpaceWithValFilter(
+                            arrName, 
+                            varDomain[arrName],
+                            valFilter,
+                            arrDict
+                        )[arrName]
+                    }
+                }else{
+                    if(etaRestriction[x[0]] && etaRestriction[x[0]].indexOf(x[1])==-1){
+                        noSatSelect = true;
+                        console.log(`WARN, no select ${x[0]} sats the guard ${edge.guard}`); 
+                        // read as model contains redundant edges
+                    }
+                    etaRestriction[x[0]] = x[1];
+                }
             })
 
-            // todo: add filter over vvarsNotInSelect?
-            
-            // add vvars from etaCurr to ld_trg
-            if(okWithDomain){
-                ld_temp.add(
-                    vvars.map((v,ind)=>etaCurr[v]).join(',')
-                )
+            if(CONFIG.debug)console.log("after guardsat");
+            if(CONFIG.debug)console.log(etaRestriction);
+        
+            if(noSatSelect){
+                return;
             }
-        }
-        updateLocalDomain(_ld,_trg, ld_temp)
 
+        
+            let prodSize = 1;
+            for(let p in etaRestriction){
+                // if(vvarsNotInSelect.indexOf(p)==-1 && ares?.rhs?.indexOf(p)==-1)
+                if(vvarsNotInSelect.indexOf(p)==-1 && !(ares?.rhs?.indexOf(p)>=0))
+                    delete etaRestriction[p];
+            }
+            
+            // resolve inner refs
+            etaRestriction = Object.entries(etaRestriction).map(x=>{
+                prodSize *= typeof x[1]=='string' && etaRestriction[x[1]] ? etaRestriction[x[1]].length : x[1].length
+                return {
+                    "name":x[0],
+                    "vals":typeof x[1]=='string' && etaRestriction[x[1]] ? etaRestriction[x[1]] : x[1]
+                }
+            })
+        
+              
+            if(CONFIG.debug)console.log(`Number of eta: ${prodSize}`);
+            
+            let ld_temp = new Set();
+            for(let ii=0;ii<prodSize;ii++){
+                let etaCurr = {};
+                let k = ii;
+                
+                for(let jj=0;jj<etaRestriction.length;jj++){
+                    let name = etaRestriction[jj].name;
+                    let m = etaRestriction[jj].vals.length;
+                    let val = etaRestriction[jj].vals[k%m];
+        
+                    // console.log(`m=${m}, ii=${ii}, j=${jj}, k=${k}`);
+                    // console.log(`Assuming ${name} = ${val}`);
+                    etaCurr[name]=val;
+                    k = Math.floor(k/m);
+                }
+                if(CONFIG.debug)console.log(etaCurr);
+
+                // skip etaCurr if not agree with ldsrc
+                if(CONFIG.debug)console.log('ld_src');
+                if(CONFIG.debug)console.log(_ld[_src]);
+                if(!_ld[_src].has(vvars.map((v,ind)=>etaCurr[v]).join(';')))continue;
+
+                
+                // find the last assignemnt stmt where vvar appear => discard the suffix
+                
+                if(ares){
+                    // ares?.listener?.assignment_list?.forEach(stm=>{
+                    ares?.listener?.assignment_list?.forEach((stm,ind)=>{
+                        // let left = stm[0].getText();
+                        
+                        let left = assignmentList[ind].split('=')[0];
+                        
+                        let right = stm[1];
+                        
+                        // console.log(stm);
+                        // console.log(`used to be ${ares.listener.joinToString(right)}`);
+                        // let str = ares.listener.substituteStr(right, etaCurr);
+                        if(CONFIG.debug)console.log(`left = ${left}, right = ${ares.listener.joinToString(right)}`);
+                        // etaCurr[left] = eval(str);
+
+                        let res = ares.listener.substituteStr(right, etaCurr);
+                        
+                        const ARR_EL_REG = /([^\[\]]+)\[(\d+)\]/;
+                        let arrMatch = left.match(ARR_EL_REG)
+                        if(arrMatch){
+                            left = arrMatch[1];
+                            etaCurr[left] = etaCurr[left].replace(/[\]\[]+/g, '').split(',');
+                            etaCurr[left][Number(arrMatch[2])] = eval(res);
+                            etaCurr[left] = `${etaCurr[left].join(',')}`;
+                        }else{
+                            etaCurr[left] = eval(res);
+                        }
+                    })
+                }
+                if(CONFIG.debug)console.log({etaCurr});
+                // check etaCurr agrees with the domains
+                let okWithDomain = true;
+                vvars.forEach(v=>{
+                    // console.log(vvars);
+                    // console.log(varDomain);
+                    // console.log(etaCurr);
+                    if(Number(etaCurr[v])<varDomain[v][0] || Number(etaCurr[v])>varDomain[v][1])okWithDomain=false;
+                })
+
+                // todo: add filter over vvarsNotInSelect?
+                
+                // add vvars from etaCurr to ld_trg
+                if(okWithDomain){
+                    ld_temp.add(
+                        vvars.map((v,ind)=>etaCurr[v]).join(';')
+                    )
+                }
+            }
+            updateLocalDomain(_ld,_trg, ld_temp)
+        }
     }
 }
 
@@ -431,10 +536,29 @@ function getConstVars(input){
     return myListener._const_dict;
 }
 
-function getVarDomain(input){
+// 1-dim arrays max
+function getVarDomain(input, contextDict){
     let {tree, myListener} = parseTreeWalk(input, 'translation');
-    // console.log(myListener._vlist.reduce((acc,x)=>(acc[x.vid.text]=x._varType,acc),{}));
-    return myListener._vlist.reduce((acc,x)=>(acc[x.vid.text]=x._varType,acc),{});
+    // string-to-string map
+    let varDomain = myListener._vlist.reduce((acc,x)=>(acc[x.vid.text]=x._varType,acc),{});
+    const INT16_MAX = CONFIG.approximateDomain.int16Max;
+
+    // convert to string-to-numRange map
+    for(let v in varDomain){
+        let chunk = varDomain[v].replace(/[\,\[\]]+/gm,'').split(' ').filter(x=>x)
+        if(chunk[0] === 'chan' || chunk[0] === 'const')delete varDomain[v];
+        else if(chunk[0]=== 'int'){
+            if(chunk[1] && chunk[2]){
+                varDomain[v] = [
+                    Number(retrieveNumberOrDictEntry(chunk[1], contextDict)),
+                    Number(retrieveNumberOrDictEntry(chunk[2], contextDict))
+                ];
+            }else{
+                varDomain[v] = [1-INT16_MAX, INT16_MAX]
+            }
+        }
+    }
+    return varDomain;
 }
 
 function retrieveNumberOrDictEntry(val, dict){
@@ -508,6 +632,72 @@ function restictionOfLocalDomain(ld, i, sep=CONFIG.preprocessModel.locationIdSep
     }
     return res;
 }
+
+
+function computeArrDim(arrDict){
+    for(let k in arrDict){
+        arrDict[k] = eval(arrDict[k])[0]
+    }
+    return arrDict;
+}
+
+// arr - array of arrays
+function cartesianProduct(...arr){
+    return arr.reduce(
+        // acc initialized with first arr
+        (acc, b) => acc.flatMap(
+            d => b.map(
+                e => [d, e].flat()
+            )
+        ),
+    );
+}
+
+function generateEvalSpace(varDom, varExclude, arrDict){
+    let eta = {};
+    for(let k in varDom){
+        if(varExclude.hasOwnProperty(k)){
+            continue;
+        }else{
+            let left = varDom[k][0];
+            let right = varDom[k][1];
+            eta[k] = Array.from(
+                {length:left+right+1},
+                (v,k)=>k+left
+            );
+            if(arrDict.hasOwnProperty(k) && arrDict[k]>1){
+                eta[k] = cartesianProduct(...Array(arrDict[k]).fill(eta[k])).map(x=>'['+x.join(',')+']');
+            }
+        }
+    }
+    return eta;
+}
+
+function singleVarStateSpaceWithValFilter(name, dom, valFilter, arrDict){
+    let eta = {};
+
+    let left = dom[0];
+    let right = dom[1];
+    eta[name] = Array.from(
+        {length:-left+right+1},
+        (v,k)=>k+left
+    );
+    if(arrDict.hasOwnProperty(name)){
+        eta[name] = cartesianProduct(...Array(arrDict[name]).fill(eta[name]));
+    }
+    eta[name] = eta[name].filter(valFilter).map(x=>'['+x.join(',')+']')
+
+    return eta;
+}
+
+
+
+function setStrArrEl(str, ind, val){
+    let x = str.replace(/[\]\[]+/g, '').split(',');
+    x[ind] = val;
+    return '['+x.join(',')+']'
+}
+
 
 // ============================================================
 export {approximateLocalDomain, restictionOfLocalDomain};
