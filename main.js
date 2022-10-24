@@ -89,7 +89,7 @@ let _inputStr = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
 let _inputStrOrig = _inputStr;
 
 
-for(let nv = 1; nv<=3; nv++){
+for(let nv = 1; nv<=10; nv++){
     _inputStr = _inputStrOrig.replace(/(?<=const int N_V = )(\d)/, `${nv}`);
     for(let nc = 1; nc<=3; nc++){
         _inputStr = _inputStr.replace(/(?<=const int N_C = )(\d)/, `${nc}`);
@@ -102,10 +102,11 @@ for(let nv = 1; nv<=3; nv++){
         }).toString();
 
         
-        // fs.writeFileSync(`./output_files/a1_${nv}_${nc}_may.xml`, doAbstraction1t(_inputStr))
-        fs.writeFileSync(`./output_files/a2_${nv}_${nc}_may.xml`, doAbstraction2t(_inputStr2, nv))
-        // doAbstraction1t(_inputStr);
-        // doAbstraction2t(_inputStr, nv)
+        fs.writeFileSync(`./output_files/a1_${nv}_${nc}_must.xml`, doAbstraction1t(_inputStr2, false))
+        // fs.writeFileSync(`./output_files/a1_${nv}_${nc}_may.xml`, doAbstraction1t(_inputStr2))
+        // fs.writeFileSync(`./output_files/a2_${nv}_${nc}_may.xml`, doAbstraction2t(_inputStr2, nv))
+        // fs.writeFileSync(`./output_files/a2_${nv}_${nc}_must.xml`, doAbstraction2t(_inputStr2, nv, false))
+        
         let hrDiff = process.hrtime(hrStart);
         let time = (hrDiff[0]*NS_PER_SEC + hrDiff[1])/1000000;
         console.log(time);
@@ -146,19 +147,20 @@ function convertMapping(myMapping){
 // (remove mem_vt, mem_sg)
 // ================================
 
-function doAbstraction1t(inputStr){
+function doAbstraction1t(inputStr, may=true){
     let _ld = approximateLocalDomain(
         inputStr,
         {
             vars: ['mem_sg', 'mem_vt'],
             valInit: [0, 0]
         },
-        "Voter"
+        "Voter",
+        may
     );
     let _d = convertMapping(_ld);
 
-    console.log(_ld);
-    console.log(_d);
+    // console.log(_ld);
+    // console.log(_d);
 
     let aparams = {
         template: "Voter",
@@ -184,14 +186,15 @@ function doAbstraction1t(inputStr){
     return amodel.toString();
 }
 
-function doAbstraction2t(inputStr, NV){
+function doAbstraction2t(inputStr, NV, may=true){
     let _ld1 = approximateLocalDomain(
         inputStr,
         {
             vars: ['mem_dec'],
             valInit: [0]
         },
-        "Voter"
+        "Voter",
+        may
     );
 
     let _ld2 = approximateLocalDomain(
@@ -200,18 +203,19 @@ function doAbstraction2t(inputStr, NV){
             vars: ['dec_recv'],
             valInit: [Array.from({length:Number(NV)}, x=>0)],
         },
-        "Authority"
+        "Authority",
+        may
     );
     
-    console.log(_ld1);
-    console.log(_ld2);
+    // console.log(_ld1);
+    // console.log(_ld2);
     // return '';
 
     let _d1 = convertMapping(_ld1);
     let _d2 = convertMapping(_ld2);
 
-    console.log(_d1);
-    console.log(_d2);
+    // console.log(_d1);
+    // console.log(_d2);
 
     let aparams1 = {
         template: "Voter",

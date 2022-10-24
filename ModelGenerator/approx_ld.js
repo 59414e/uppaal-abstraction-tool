@@ -365,8 +365,8 @@ function approximateLocalDomain(inputString, varInfo, targetTemplate=CONFIG.prep
                 if(arrMatch){
                     let arrName = arrMatch[1];
                     let arrInd = arrMatch[2].match(/[a-zA-Z_]/) ? arrMatch[2] : eval(arrMatch[2]);
-                    let valFilter = (a)=>a[arrInd]=x[1];
                     if(CONFIG.debug)console.log({arrName, arrInd});
+                    let valFilter = (a)=>a[arrInd]==x[1];
                     if(etaRestriction.hasOwnProperty(arrName)){
                         etaRestriction[arrName]= etaRestriction[arrName].map(x=>x.split(',')).filter(valFilter).map(x=>x.join(','))
                     }else{

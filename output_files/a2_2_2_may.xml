@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
         <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'><nta>
-  <declaration>const int __d_vals_at_id4__l9mxcxce[9][2] = {{0,0},{1,0},{2,0},{0,1},{0,2},{1,1},{2,1},{1,2},{2,2}};
-const int __d_vals0__l9mxcxce[2] = {0,0};
-const int __d_vals_at_id0__l9mxcxca[2][1] = {{1},{2}};
-const int __d_vals_at_id1__l9mxcxca[2][1] = {{1},{2}};
-const int __d_vals0__l9mxcxca[1] = {0};
+  <declaration>const int __d_vals_at_id4__l9n02360[9][2] = {{0,0},{1,0},{2,0},{0,1},{0,2},{1,1},{2,1},{1,2},{2,2}};
+const int __d_vals0__l9n02360[2] = {0,0};
+const int __d_vals_at_id0__l9n0235o[2][1] = {{1},{2}};
+const int __d_vals_at_id1__l9n0235o[2][1] = {{1},{2}};
+const int __d_vals0__l9n0235o[1] = {0};
 const int N_V = 2; const int N_C = 2; chan decl [ 2 + 1 ]; chan coll [ 2 + 1 ]; chan vote [ 2 + 1 ]; int [ 0, 2 ] sh_dec; int [ 0, 1 ] buff_mail [ 2 + 1 ]; int [ 0, 2 ] sh_vt; int [ 0, 1 ] sh_sg;</declaration>
   <template>
     <name x="5" y="5">Voter</name>
     <parameter>int [ 1, 2 ] id</parameter>
     <declaration>int [ 0, 2 ] mem_dec; int [ 0, 1 ] mem_sg; int [ 0, 2 ] mem_vt;
 
-void _set_argsr_values__l9mxcxca(const int &amp;_curr_vals[1]){
+void _set_argsr_values__l9n0235o(const int &amp;_curr_vals[1]){
 	mem_dec=_curr_vals[0];
 }
-void _update_argsn_values__l9mxcxca(){
+void _update_argsn_values__l9n0235o(){
 	
 }</declaration>
     <location id="id0" x="64" y="-96">
@@ -35,13 +35,13 @@ void _update_argsn_values__l9mxcxca(){
       <target ref="id1"/>
       <label kind="select" x="128" y="-312">vt:int[0,2],
 sg:int[0,1],
-_l9mxcxca:int[0,1]</label>
+_l9n0235o:int[0,1]</label>
       <label kind="synchronisation" x="128" y="-280">vote [ id ]!</label>
-      <label kind="assignment" x="128" y="-264">_set_argsr_values__l9mxcxca(__d_vals_at_id0__l9mxcxca[_l9mxcxca]),
-_update_argsn_values__l9mxcxca(),
+      <label kind="assignment" x="128" y="-264">_set_argsr_values__l9n0235o(__d_vals_at_id0__l9n0235o[_l9n0235o]),
+_update_argsn_values__l9n0235o(),
 sh_vt = vt, sh_sg = sg, mem_sg = sg, mem_vt = vt,
-_update_argsn_values__l9mxcxca(),
-_set_argsr_values__l9mxcxca(__d_vals0__l9mxcxca)</label>
+_update_argsn_values__l9n0235o(),
+_set_argsr_values__l9n0235o(__d_vals0__l9n0235o)</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
@@ -49,8 +49,8 @@ _set_argsr_values__l9mxcxca(__d_vals0__l9mxcxca)</label>
       <target ref="id0"/>
       <label kind="guard" x="-56" y="0">mem_dec == 2 &amp;&amp; buff_mail [ id ] == 1</label>
       <label kind="assignment" x="-56" y="16">buff_mail [ id ] = 0,
-_update_argsn_values__l9mxcxca(),
-_set_argsr_values__l9mxcxca(__d_vals0__l9mxcxca)</label>
+_update_argsn_values__l9n0235o(),
+_set_argsr_values__l9n0235o(__d_vals0__l9n0235o)</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
@@ -58,8 +58,8 @@ _set_argsr_values__l9mxcxca(__d_vals0__l9mxcxca)</label>
       <target ref="id0"/>
       <label kind="guard" x="-56" y="-232">mem_dec == 1</label>
       <label kind="synchronisation" x="-56" y="-216">coll[id]!</label>
-      <label kind="assignment">_update_argsn_values__l9mxcxca(),
-_set_argsr_values__l9mxcxca(__d_vals0__l9mxcxca)</label>
+      <label kind="assignment">_update_argsn_values__l9n0235o(),
+_set_argsr_values__l9n0235o(__d_vals0__l9n0235o)</label>
       <nail x="-32" y="-192"/>
     </transition>
     <transition>
@@ -75,11 +75,11 @@ _set_argsr_values__l9mxcxca(__d_vals0__l9mxcxca)</label>
     <name>Authority</name>
     <declaration>int [ 0, 2 ] dec_recv [ 2 ]; int [ 0, 1 ] pack_sent [ 2 + 1 ]; int [ 0, 2 ] vt_recv [ 2 + 1 ]; int [ 0, 1 ] sg_recv [ 2 + 1 ]; int [ 0, 2 ] tally_1; int [ 0, 2 ] tally_2; int [ 0, 2 ] tally_3; int tally_sum;
 
-void _set_argsr_values__l9mxcxce(const int &amp;_curr_vals[2]){
+void _set_argsr_values__l9n02360(const int &amp;_curr_vals[2]){
 	dec_recv[0]=_curr_vals[0];
 	dec_recv[1]=_curr_vals[1];
 }
-void _update_argsn_values__l9mxcxce(){
+void _update_argsn_values__l9n02360(){
 	
 }</declaration>
     <location id="id4" x="288" y="0">
@@ -96,13 +96,13 @@ void _update_argsn_values__l9mxcxce(){
       <source ref="id4"/>
       <target ref="id4"/>
       <label kind="select" x="256" y="-152">v_i:int[1,2],
-_l9mxcxce:int[0,8]</label>
+_l9n02360:int[0,8]</label>
       <label kind="synchronisation" x="256" y="-136">vote [ v_i ]?</label>
-      <label kind="assignment" x="256" y="-120">_set_argsr_values__l9mxcxce(__d_vals_at_id4__l9mxcxce[_l9mxcxce]),
-_update_argsn_values__l9mxcxce(),
+      <label kind="assignment" x="256" y="-120">_set_argsr_values__l9n02360(__d_vals_at_id4__l9n02360[_l9n02360]),
+_update_argsn_values__l9n02360(),
 tally_1 = ( sh_sg &amp;&amp; sh_vt == 1 ) ? ( tally_1 + 1 ) : tally_1, tally_2 = ( sh_sg &amp;&amp; sh_vt == 2 ) ? ( tally_2 + 1 ) : tally_2, tally_3 = ( sh_sg &amp;&amp; sh_vt == 3 ) ? ( tally_3 + 1 ) : tally_3, sh_vt = 0, sh_sg = 0,
-_update_argsn_values__l9mxcxce(),
-_set_argsr_values__l9mxcxce(__d_vals0__l9mxcxce)</label>
+_update_argsn_values__l9n02360(),
+_set_argsr_values__l9n02360(__d_vals0__l9n02360)</label>
       <nail x="320" y="-64"/>
       <nail x="256" y="-64"/>
     </transition>
@@ -128,13 +128,12 @@ _set_argsr_values__l9mxcxce(__d_vals0__l9mxcxce)</label>
     <transition>
       <source ref="id5"/>
       <target ref="id4"/>
-      <label kind="assignment">_update_argsn_values__l9mxcxce(),
-_set_argsr_values__l9mxcxce(__d_vals0__l9mxcxce)</label>
+      <label kind="assignment">_update_argsn_values__l9n02360(),
+_set_argsr_values__l9n02360(__d_vals0__l9n02360)</label>
     </transition>
     <transition>
       <source ref="id6"/>
       <target ref="id5"/>
-      <label kind="select">_l9mxcxce:int[0,8]</label>
       <label kind="assignment"/>
     </transition>
     <transition>

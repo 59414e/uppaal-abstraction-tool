@@ -3,7 +3,7 @@ import * as path from 'path';
 
 
 const CONFIG = {
-    debug: true,
+    debug: false,
 
     INPUT: {
         DIR: "./sample_input",

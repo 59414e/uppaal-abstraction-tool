@@ -100,6 +100,10 @@ function ldeConstVarDecString(params){
     }
     // for (let locationId in params.d) {
     for(let locationId of params.scope){
+        if(params.d[locationId].length==0){
+            continue;
+        }
+
         let domLen = params.d[locationId].length;
         let domVal = JSON.stringify(params.d[locationId]).replace(/\[/g, '\{').replace(/\]/g, '\}');
         str += `const int ${ldeVarName(locationId, params.myHash)}[${domLen}][${varsLen}] = ${domVal};\n`
@@ -112,7 +116,8 @@ function ldeConstVarDecString(params){
 
 function recomputeScope(model, params){
     let llist = params.scope==="*" ? model.getLocationsOf(params.template) : params.scope.split(/,|;/);
-    return llist.filter(l=>(typeof params.d[l] !== "undefined") && params.d[l].length!==0)
+    return llist;
+    // return llist.filter(l=>(typeof params.d[l] !== "undefined") && params.d[l].length!==0)
 }
 
 
@@ -133,7 +138,7 @@ function bar(model, params) {
 
 
     // Processing of template edges
-    model.nta.template[model.indexOfTemplate(params.template)].transition.map((t, ind) => {
+    model.nta.template[model.indexOfTemplate(params.template)].transition=    model.nta.template[model.indexOfTemplate(params.template)].transition.filter((t, ind) => {
         let addNewSelectLabel = false; 
 
         let refinedParams = Object.assign({}, params);
@@ -153,6 +158,15 @@ function bar(model, params) {
             params.scope.indexOf(t.src) === -1 &&
             params.scope.indexOf(t.trg) !== -1
         );
+
+        if(
+            (innerEdge || enterEdge) && params.d[t.trg].length==0 || 
+            (innerEdge || leaveEdge) && params.d[t.src].length==0
+        ){
+            if(CONFIG.debug)console.log(`${t.src}->${t.trg} will be deleted)`);    
+            
+            return false;
+        }
 
         if(CONFIG.debug)console.log(`${t.src}->${t.trg} (${enterEdge}-${innerEdge}-${leaveEdge})`);
         
@@ -202,7 +216,6 @@ function bar(model, params) {
             if(innerEdge || enterEdge){
             // if(params.scope.indexOf(t.src) === -1 && params.scope.indexOf(t.trg) !== -1){
                 // enter edge - append the reset block
-                console.log("@");
                 res = [
                     res,
                     updateArgsNFunctionCallString(params),
@@ -234,9 +247,7 @@ function bar(model, params) {
                 t.assignment = res;
             } 
 
-            if(enterEdge && !innerEdge){
-                addNewSelectLabel = false;
-            }
+            
             // todo: argsR must not appear on lhs (this would be an attempt to assign to a const var)
             // todo: argsR reset should only appear when needed
         }
@@ -252,6 +263,14 @@ function bar(model, params) {
                 }
             }
         }
+
+        if(enterEdge && !innerEdge){
+            addNewSelectLabel = false;
+        }
+
+        if(!enterEdge && !innerEdge && !leaveEdge){
+            addNewSelectLabel = false;
+        }
         
         if(addNewSelectLabel){
             if(typeof t.select === 'undefined'){
@@ -261,6 +280,7 @@ function bar(model, params) {
             }
             t.select += `${params.myHash}:int[0,${params.d[t.src].length-1}]`;
         }
+        return t;
     })
 
     return;

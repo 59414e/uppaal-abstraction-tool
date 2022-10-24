@@ -27,9 +27,9 @@ date +"%c" > $LOGFILE
 
 echo -e "conf\tSt\ttime" > $CSVFILE
 
-for NV in {1..3}; do
+for NV in {1..9}; do
     for NC in {1..3}; do
-        AFILE="a2_${NV}_${NC}_may"
+        AFILE="a1_${NV}_${NC}_must"
         UARGS="-u ${MODEL_DIR}/${AFILE}.xml $QUERY"
         
         echo -e "${UBlue}Verifying abstract model (${AFILE})...${ColorOff}"

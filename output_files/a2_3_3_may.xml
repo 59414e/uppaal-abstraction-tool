@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
         <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'><nta>
-  <declaration>const int __d_vals_at_id4__l9mxd0dp[27][3] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{0,2,0},{0,0,1},{0,0,2},{1,1,0},{2,1,0},{1,2,0},{2,2,0},{1,0,1},{2,0,1},{1,0,2},{2,0,2},{0,1,1},{0,2,1},{0,1,2},{0,2,2},{1,1,1},{2,1,1},{1,2,1},{2,2,1},{1,1,2},{2,1,2},{1,2,2},{2,2,2}};
-const int __d_vals0__l9mxd0dp[3] = {0,0,0};
-const int __d_vals_at_id0__l9mxd0dj[2][1] = {{1},{2}};
-const int __d_vals_at_id1__l9mxd0dj[2][1] = {{1},{2}};
-const int __d_vals0__l9mxd0dj[1] = {0};
+  <declaration>const int __d_vals_at_id4__l9n023e7[27][3] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{0,2,0},{0,0,1},{0,0,2},{1,1,0},{2,1,0},{1,2,0},{2,2,0},{1,0,1},{2,0,1},{1,0,2},{2,0,2},{0,1,1},{0,2,1},{0,1,2},{0,2,2},{1,1,1},{2,1,1},{1,2,1},{2,2,1},{1,1,2},{2,1,2},{1,2,2},{2,2,2}};
+const int __d_vals0__l9n023e7[3] = {0,0,0};
+const int __d_vals_at_id0__l9n023dw[2][1] = {{1},{2}};
+const int __d_vals_at_id1__l9n023dw[2][1] = {{1},{2}};
+const int __d_vals0__l9n023dw[1] = {0};
 const int N_V = 3; const int N_C = 3; chan decl [ 3 + 1 ]; chan coll [ 3 + 1 ]; chan vote [ 3 + 1 ]; int [ 0, 2 ] sh_dec; int [ 0, 1 ] buff_mail [ 3 + 1 ]; int [ 0, 3 ] sh_vt; int [ 0, 1 ] sh_sg;</declaration>
   <template>
     <name x="5" y="5">Voter</name>
     <parameter>int [ 1, 3 ] id</parameter>
     <declaration>int [ 0, 2 ] mem_dec; int [ 0, 1 ] mem_sg; int [ 0, 3 ] mem_vt;
 
-void _set_argsr_values__l9mxd0dj(const int &amp;_curr_vals[1]){
+void _set_argsr_values__l9n023dw(const int &amp;_curr_vals[1]){
 	mem_dec=_curr_vals[0];
 }
-void _update_argsn_values__l9mxd0dj(){
+void _update_argsn_values__l9n023dw(){
 	
 }</declaration>
     <location id="id0" x="64" y="-96">
@@ -35,13 +35,13 @@ void _update_argsn_values__l9mxd0dj(){
       <target ref="id1"/>
       <label kind="select" x="128" y="-312">vt:int[0,3],
 sg:int[0,1],
-_l9mxd0dj:int[0,1]</label>
+_l9n023dw:int[0,1]</label>
       <label kind="synchronisation" x="128" y="-280">vote [ id ]!</label>
-      <label kind="assignment" x="128" y="-264">_set_argsr_values__l9mxd0dj(__d_vals_at_id0__l9mxd0dj[_l9mxd0dj]),
-_update_argsn_values__l9mxd0dj(),
+      <label kind="assignment" x="128" y="-264">_set_argsr_values__l9n023dw(__d_vals_at_id0__l9n023dw[_l9n023dw]),
+_update_argsn_values__l9n023dw(),
 sh_vt = vt, sh_sg = sg, mem_sg = sg, mem_vt = vt,
-_update_argsn_values__l9mxd0dj(),
-_set_argsr_values__l9mxd0dj(__d_vals0__l9mxd0dj)</label>
+_update_argsn_values__l9n023dw(),
+_set_argsr_values__l9n023dw(__d_vals0__l9n023dw)</label>
       <nail x="160" y="-192"/>
     </transition>
     <transition>
@@ -49,8 +49,8 @@ _set_argsr_values__l9mxd0dj(__d_vals0__l9mxd0dj)</label>
       <target ref="id0"/>
       <label kind="guard" x="-56" y="0">mem_dec == 2 &amp;&amp; buff_mail [ id ] == 1</label>
       <label kind="assignment" x="-56" y="16">buff_mail [ id ] = 0,
-_update_argsn_values__l9mxd0dj(),
-_set_argsr_values__l9mxd0dj(__d_vals0__l9mxd0dj)</label>
+_update_argsn_values__l9n023dw(),
+_set_argsr_values__l9n023dw(__d_vals0__l9n023dw)</label>
       <nail x="-32" y="0"/>
     </transition>
     <transition>
@@ -58,8 +58,8 @@ _set_argsr_values__l9mxd0dj(__d_vals0__l9mxd0dj)</label>
       <target ref="id0"/>
       <label kind="guard" x="-56" y="-232">mem_dec == 1</label>
       <label kind="synchronisation" x="-56" y="-216">coll[id]!</label>
-      <label kind="assignment">_update_argsn_values__l9mxd0dj(),
-_set_argsr_values__l9mxd0dj(__d_vals0__l9mxd0dj)</label>
+      <label kind="assignment">_update_argsn_values__l9n023dw(),
+_set_argsr_values__l9n023dw(__d_vals0__l9n023dw)</label>
       <nail x="-32" y="-192"/>
     </transition>
     <transition>
@@ -75,12 +75,12 @@ _set_argsr_values__l9mxd0dj(__d_vals0__l9mxd0dj)</label>
     <name>Authority</name>
     <declaration>int [ 0, 2 ] dec_recv [ 3 ]; int [ 0, 1 ] pack_sent [ 3 + 1 ]; int [ 0, 3 ] vt_recv [ 3 + 1 ]; int [ 0, 1 ] sg_recv [ 3 + 1 ]; int [ 0, 3 ] tally_1; int [ 0, 3 ] tally_2; int [ 0, 3 ] tally_3; int tally_sum;
 
-void _set_argsr_values__l9mxd0dp(const int &amp;_curr_vals[3]){
+void _set_argsr_values__l9n023e7(const int &amp;_curr_vals[3]){
 	dec_recv[0]=_curr_vals[0];
 	dec_recv[1]=_curr_vals[1];
 	dec_recv[2]=_curr_vals[2];
 }
-void _update_argsn_values__l9mxd0dp(){
+void _update_argsn_values__l9n023e7(){
 	
 }</declaration>
     <location id="id4" x="288" y="0">
@@ -97,13 +97,13 @@ void _update_argsn_values__l9mxd0dp(){
       <source ref="id4"/>
       <target ref="id4"/>
       <label kind="select" x="256" y="-152">v_i:int[1,3],
-_l9mxd0dp:int[0,26]</label>
+_l9n023e7:int[0,26]</label>
       <label kind="synchronisation" x="256" y="-136">vote [ v_i ]?</label>
-      <label kind="assignment" x="256" y="-120">_set_argsr_values__l9mxd0dp(__d_vals_at_id4__l9mxd0dp[_l9mxd0dp]),
-_update_argsn_values__l9mxd0dp(),
+      <label kind="assignment" x="256" y="-120">_set_argsr_values__l9n023e7(__d_vals_at_id4__l9n023e7[_l9n023e7]),
+_update_argsn_values__l9n023e7(),
 tally_1 = ( sh_sg &amp;&amp; sh_vt == 1 ) ? ( tally_1 + 1 ) : tally_1, tally_2 = ( sh_sg &amp;&amp; sh_vt == 2 ) ? ( tally_2 + 1 ) : tally_2, tally_3 = ( sh_sg &amp;&amp; sh_vt == 3 ) ? ( tally_3 + 1 ) : tally_3, sh_vt = 0, sh_sg = 0,
-_update_argsn_values__l9mxd0dp(),
-_set_argsr_values__l9mxd0dp(__d_vals0__l9mxd0dp)</label>
+_update_argsn_values__l9n023e7(),
+_set_argsr_values__l9n023e7(__d_vals0__l9n023e7)</label>
       <nail x="320" y="-64"/>
       <nail x="256" y="-64"/>
     </transition>
@@ -129,13 +129,12 @@ _set_argsr_values__l9mxd0dp(__d_vals0__l9mxd0dp)</label>
     <transition>
       <source ref="id5"/>
       <target ref="id4"/>
-      <label kind="assignment">_update_argsn_values__l9mxd0dp(),
-_set_argsr_values__l9mxd0dp(__d_vals0__l9mxd0dp)</label>
+      <label kind="assignment">_update_argsn_values__l9n023e7(),
+_set_argsr_values__l9n023e7(__d_vals0__l9n023e7)</label>
     </transition>
     <transition>
       <source ref="id6"/>
       <target ref="id5"/>
-      <label kind="select">_l9mxd0dp:int[0,26]</label>
       <label kind="assignment"/>
     </transition>
     <transition>
