@@ -160,7 +160,7 @@ function bar(model, params) {
         );
 
         if(
-            (innerEdge || enterEdge) && params.d[t.trg].length==0 || 
+            (innerEdge) && params.d[t.trg].length==0 || 
             (innerEdge || leaveEdge) && params.d[t.src].length==0
         ){
             if(CONFIG.debug)console.log(`${t.src}->${t.trg} will be deleted)`);    
@@ -203,15 +203,44 @@ function bar(model, params) {
                     t.guard = res;
                 }
             }
+            
             // inner OR enter edge type
             // if (params.scope === '*' || params.scope.indexOf(t.trg) !== -1){
                 // do nothing
             // }
         }
 
+        if(t.synchronisation){
+            // inner or leave edge
+            if (innerEdge || leaveEdge) {
+                let synchSymbol = t.synchronisation.slice(-1)
+                let res = generateAbstractLabelString(t.synchronisation.slice(0,-1)+';', refinedParams);
+                if (t.synchronisation.replace(/[\?\!\s]*/g,'') !== res.replace(/\s*/g,'')) {
+                    addNewSelectLabel = true;
+                    t.synchronisation = res + synchSymbol;
+                }
+            }
+        }
+
         if(true){
+            
             // let res = generateAbstractLabelString(t.assignment, refinedParams);
             let res = t.assignment || '';
+            let appearingArgsR = [];
+            if(res.length>0){
+                let isInArgsR = (v)=>{
+                    return params.argsR.indexOf(v)!=-1;
+                }   
+                
+                let {tree:atree, myListener:alistener} = parseTreeWalk(res+';', refinedParams, 'statement');
+                appearingArgsR = alistener.getVarList(atree).filter(isInArgsR);
+            }
+
+            // check if argsR appear
+            if(innerEdge && appearingArgsR.length==0 && !addNewSelectLabel){
+                if(CONFIG.debug)console.log(`Inner edge ${t.src}->${t.trg} has no argsR and thus stays unchanged`);
+                return t;
+            }
             
             if(innerEdge || enterEdge){
             // if(params.scope.indexOf(t.src) === -1 && params.scope.indexOf(t.trg) !== -1){
@@ -252,17 +281,7 @@ function bar(model, params) {
             // todo: argsR reset should only appear when needed
         }
 
-        if(t.synchronisation){
-            // inner or leave edge
-            if (innerEdge || leaveEdge) {
-                let synchSymbol = t.synchronisation.slice(-1)
-                let res = generateAbstractLabelString(t.synchronisation.slice(0,-1)+';', refinedParams);
-                if (t.synchronisation.replace(/\s*/g,'') !== res.replace(/\s*/g,'')) {
-                    addNewSelectLabel = true;
-                    t.synchronisation = res + synchSymbol;
-                }
-            }
-        }
+        
 
         if(enterEdge && !innerEdge){
             addNewSelectLabel = false;
@@ -404,6 +423,21 @@ function newlineFix(str){
     return str.replace(nl_reg,function(match){
         return match.replace(/\s+/gm,'').split(',').join(',\n')
     })
+}
+
+function parseTreeWalk(input, _params, ruleName = 'expr'){
+    const chars = new antlr4.InputStream(input);
+    const lexer = new yagLexer(chars);
+    const tokens = new antlr4.CommonTokenStream(lexer);
+    const parser = new yagParser(tokens);
+    parser.buildParseTrees = true;
+    const tree = parser[ruleName]();
+    const myListener = new CustomListener(_params);
+    antlr4.tree.ParseTreeWalker.DEFAULT.walk(myListener, tree);
+    return {
+        "tree": tree,
+        "myListener": myListener
+    }
 }
 
 export {generateAbstractModel};

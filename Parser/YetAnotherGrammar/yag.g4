@@ -11,23 +11,62 @@ notes:
 
 grammar yag;
 
-file: translation EOF;
-translation: (vdec_list | fdec)+;
+@members{
+	let constMap = {};
+}
 
-vdec_list: vtype vdec (',' vdec)* ';';
+file
+	: translation EOF
+	;
 
-vdec: vid=ID dim=arr_size? ('=' init=expr)? ;
+// Global or Template declaration body
+translation
+	: (vdec_list | fdec)+
+	;
 
-arr_size: ('['expr']')+;
+// begin{ULABELS}
+select_label
+	: select_pair (',' select_pair)*
+	;
+select_pair
+	: vid=ID ':' range=vtype
+	;
+assignment_label
+	: assignment_stmt (',' assignment_stmt)* ';'
+	;
+synchronisation_label
+	: chan=expr ('?'|'!')
+	;
+// end{ULABELS}
 
-fdec: ret=vtype fid=ID '(' params=fparam_list? ')' bl=block;
-fparam_list: fparam (',' fparam)*;
-fparam: vtype pid=ID arr_size?;
+vdec_list
+	: vtype vdec (',' vdec)* ';'
+	;
 
-block: '{' statement* '}';
+vdec
+	: vid=ID dim=arr_size? ('=' init=expr)?
+	;
 
-statement:
-	block
+arr_size
+	: ('['expr']')+
+	;
+
+fdec
+	: ret=vtype fid=ID '(' params=fparam_list? ')' bl=block 
+	;
+fparam_list
+	: fparam (',' fparam)*
+	;
+fparam
+	: vtype pid=ID arr_size?
+	;
+
+block
+	: '{' statement* '}'
+	;
+
+statement
+	: block
 	| vdec_list
     | FOR '(' assignment_stmt* ';' expr_list? ';' expr_list? ')' statement
     // | FOR '(' expr_list ';' expr_list ';' expr_list ')' statement
@@ -37,13 +76,20 @@ statement:
 	| SWITCH expr case_block+
 	| RETURN expr? ';'
 	| assignment_stmt (',' assignment_stmt)* ';'
-	| expr ';';
+	| expr ';'
+	;
+assignment_stmt
+	:  <assoc = right> lhs = expr assignmentOp rhs = expr
+	;
+case_block
+	: ((CASE expr) | DEFAULT) ':' statement*? BREAK ';'
+	;
 
-assignment_stmt:  <assoc = right> lhs = expr assignmentOp rhs = expr;
-case_block: ((CASE expr) | DEFAULT) ':' statement*? BREAK ';';
-
-expr:
-	expr '.' ID
+expr_list
+	: expr (',' expr)*
+	;
+expr
+	: expr '.' ID
 	| expr '[' expr ']'
 	| expr ('++' | '--')
 	| ('++' | '--' | '+' | '-') expr
@@ -64,16 +110,18 @@ expr:
 	| INTEGER
 	| BOOLEAN
 	| '{' expr_list '}' // array 
-	| '(' expr ')';
+	| '(' expr ')'
+	;
 
-expr_list: expr (',' expr)*;
+vtype
+	: ( (CONST? (INT | BOOL)) | (BCAST? CHAN)) (bound_range)?
+	;
+bound_range
+	: '[' expr ',' expr ']'
+	;
 
-bound_range: '[' expr ',' expr ']';
-
-vtype: ( (CONST? (INT | BOOL)) | (BCAST? CHAN)) (bound_range)?;
-
-assignmentOp:
-	ASSIGN
+assignmentOp
+	: ASSIGN
 	| ADD_ASSIGN
 	| SUB_ASSIGN
 	| MUL_ASSIGN
@@ -83,7 +131,9 @@ assignmentOp:
 	| OR_ASSIGN
 	| XOR_ASSIGN
 	| LSHIFT_ASSIGN
-	| RSHIFT_ASSIGN;
+	| RSHIFT_ASSIGN
+	;
+
 
 /*
  * Lexer Rules

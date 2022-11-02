@@ -1,4 +1,4 @@
-// Generated from /home/yan/Desktop/uppaal-abstraction-tool/CodeAnalyzer/YetAnotherGrammar/yag.g4 by ANTLR 4.9.2
+// Generated from /home/yan/Desktop/uppaal-abstraction-tool/Parser/YetAnotherGrammar/yag.g4 by ANTLR 4.9.2
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;
@@ -109,6 +109,9 @@ public class yagLexer extends Lexer {
 	public Vocabulary getVocabulary() {
 		return VOCABULARY;
 	}
+
+
+		let constMap = {};
 
 
 	public yagLexer(CharStream input) {

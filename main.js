@@ -89,32 +89,81 @@ let _inputStr = fs.readFileSync(CONFIG.pathToInputModel, "utf8");
 let _inputStrOrig = _inputStr;
 
 
+// A[] Authority.coll_vts imply (sum(i:int[1,N_V])Authority.pack_sent[i])==N_V
+
+const TEMP_LOG = `./temp_log.txt`;
+fs.writeFileSync(TEMP_LOG, `${new Date()}\n`);
+
 for(let nv = 1; nv<=10; nv++){
     _inputStr = _inputStrOrig.replace(/(?<=const int N_V = )(\d)/, `${nv}`);
     for(let nc = 1; nc<=3; nc++){
         _inputStr = _inputStr.replace(/(?<=const int N_C = )(\d)/, `${nc}`);
-        let hrStart = process.hrtime();
-        
+        let time;
+        let modelName;
         let model = new UppaalXML(_inputStr);
+
         let _inputStr2 = substituteConst(model, {
             'N_V':nv,
             'N_C':nc
         }).toString();
+        
+        
+        let measureTime = (cb)=>{
+            let hrStart = process.hrtime();
+            cb();
+            let hrDiff = process.hrtime(hrStart);
+            return (hrDiff[0]*NS_PER_SEC + hrDiff[1])/1000000;
+        }
+
+        modelName = `c_${nv}_${nc}`;
+        time = measureTime(()=>fs.writeFileSync(`./output_files/c/${modelName}.xml`, _inputStr2))
+        console.log(`${modelName} generated in ${time} ms`);
+        fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
 
         
-        fs.writeFileSync(`./output_files/a1_${nv}_${nc}_must.xml`, doAbstraction1t(_inputStr2, false))
-        // fs.writeFileSync(`./output_files/a1_${nv}_${nc}_may.xml`, doAbstraction1t(_inputStr2))
-        // fs.writeFileSync(`./output_files/a2_${nv}_${nc}_may.xml`, doAbstraction2t(_inputStr2, nv))
-        // fs.writeFileSync(`./output_files/a2_${nv}_${nc}_must.xml`, doAbstraction2t(_inputStr2, nv, false))
+        // modelName = `a1_${nv}_${nc}_must`;
+        // time = measureTime( ()=>fs.writeFileSync(`./output_files/${modelName}.xml`, doAbstraction1t(_inputStr2, false)) )
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
+
+        // modelName = `a1_${nv}_${nc}_may`;
+        // time = measureTime( ()=>fs.writeFileSync(`./output_files/${modelName}.xml`, doAbstraction1t(_inputStr2)) )
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
+
+        // modelName = `a2_${nv}_${nc}_may`;
+        // time = measureTime(()=>fs.writeFileSync(`./output_files/${modelName}.xml`, doAbstraction2t(_inputStr2, nv)))
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
         
-        let hrDiff = process.hrtime(hrStart);
-        let time = (hrDiff[0]*NS_PER_SEC + hrDiff[1])/1000000;
-        console.log(time);
+        // modelName = `a2_${nv}_${nc}_must`;
+        // time = measureTime(()=>fs.writeFileSync(`./output_files/${modelName}.xml`, doAbstraction2t(_inputStr2, nv, false)));
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
+
+        // modelName = `a12_${nv}_${nc}_may`;
+        // time = measureTime(()=>fs.writeFileSync(`./output_files/${modelName}.xml`, doAbstraction12t(_inputStr2, nv)))
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
+
+
+        // modelName = `a12_${nv}_${nc}_must`;
+        // time = measureTime(()=>fs.writeFileSync(`./output_files/${modelName}.xml`, doAbstraction12t(_inputStr2, nv, false)))
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
+
+
+
+        // modelName = `a3_${nv}_${nc}_may`;
+        // time = measureTime(()=>fs.writeFileSync(`./output_files/a3/${modelName}.xml`, doAbstraction12t(_inputStr2, nv)))
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
+        // // modelName = `a3_${nv}_${nc}_must`;
+        // time = measureTime(()=>fs.writeFileSync(`./output_files/a3/${modelName}.xml`, doAbstraction12t(_inputStr2, nv, false)))
+        // console.log(`${modelName} generated in ${time} ms`);
+        // fs.appendFileSync(TEMP_LOG, `${modelName} generated in ${time} ms\n`);
     }
 }
-
-
-
 // let alphaStr = renamingPreproc(inputStr).toString();
 // console.log(alphaStr);
 // let extModel = generateProduct(alphaStr);
@@ -223,6 +272,85 @@ function doAbstraction2t(inputStr, NV, may=true){
         scope: 'id0,id1',
         val0: {
             'mem_dec': 0,
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: _d1,
+        argsN: [
+        ],
+    }
+
+    let aparams2 = {
+        template: "Authority",
+        // scope: "*",
+        scope: 'id4',
+        val0: {
+            'dec_recv': [Array.from({length:Number(NV)}, x=>0)],
+        },
+        get argsR() {
+            return Object.keys(this.val0)
+        },
+        d: _d2,
+        argsN: [
+        ],
+        arrDict:{
+            'dec_recv':NV
+        }
+    }
+
+    let amodel = generateAbstractModel(
+        inputStr, 
+        aparams1
+    );
+
+    amodel = generateAbstractModel(
+        amodel.toString(), 
+        aparams2
+    );
+
+    return amodel.toString();
+}
+
+function doAbstraction12t(inputStr, NV, may=true){
+    let _ld1 = approximateLocalDomain(
+        inputStr,
+        {
+            vars: ['mem_dec', 'mem_sg', 'mem_vt'],
+            valInit: [0, 0, 0]
+        },
+        "Voter",
+        may
+    );
+
+    let _ld2 = approximateLocalDomain(
+        inputStr,
+        {
+            vars: ['dec_recv'],
+            valInit: [Array.from({length:Number(NV)}, x=>0)],
+        },
+        "Authority",
+        may
+    );
+    
+    // console.log(_ld1);
+    // console.log(_ld2);
+    // return '';
+
+    let _d1 = convertMapping(_ld1);
+    let _d2 = convertMapping(_ld2);
+
+    // console.log(_d1);
+    // console.log(_d2);
+
+    let aparams1 = {
+        template: "Voter",
+        // scope: "*",
+        scope: 'id0,id1',
+        val0: {
+            'mem_dec': 0,
+            'mem_sg': 0,
+            'mem_vt': 0
         },
         get argsR() {
             return Object.keys(this.val0)

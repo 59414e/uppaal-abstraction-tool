@@ -8,19 +8,11 @@ const int N_C = 3;
 chan decl[N_V+1];
 chan coll[N_V+1];
 chan vote[N_V+1];
-//int[0,N_V] tally[N_C+1];
 
 int[0,2] sh_dec; // 1 - inperson, 2 - by mail
 int[0,1] buff_mail[N_V+1]; // election package is delivered to mailbox
 int[0,N_C] sh_vt; // chosen candidate
 int[0,1] sh_sg; // signed form (honest+private casting)
-
-//int ballots_received(){
-//    int i;
-//	int res=0;
-//	if(tally_sum!=0)return tally_sum;
-//    return tally_1+tally_2+tally_3;
-//}
 </declaration>
 	<template>
 		<name x="5" y="5">Voter</name>

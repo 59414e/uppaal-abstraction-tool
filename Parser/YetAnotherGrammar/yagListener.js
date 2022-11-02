@@ -1,4 +1,4 @@
-// Generated from yag.g4 by ANTLR 4.10.1
+// Generated from java-escape by ANTLR 4.11.1
 // jshint ignore: start
 import antlr4 from 'antlr4';
 
@@ -20,6 +20,42 @@ export default class yagListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by yagParser#translation.
 	exitTranslation(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#select_label.
+	enterSelect_label(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#select_label.
+	exitSelect_label(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#select_pair.
+	enterSelect_pair(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#select_pair.
+	exitSelect_pair(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#assignment_label.
+	enterAssignment_label(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#assignment_label.
+	exitAssignment_label(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#synchronisation_label.
+	enterSynchronisation_label(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#synchronisation_label.
+	exitSynchronisation_label(ctx) {
 	}
 
 
@@ -113,15 +149,6 @@ export default class yagListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by yagParser#expr.
-	enterExpr(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#expr.
-	exitExpr(ctx) {
-	}
-
-
 	// Enter a parse tree produced by yagParser#expr_list.
 	enterExpr_list(ctx) {
 	}
@@ -131,12 +158,12 @@ export default class yagListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
-	// Enter a parse tree produced by yagParser#bound_range.
-	enterBound_range(ctx) {
+	// Enter a parse tree produced by yagParser#expr.
+	enterExpr(ctx) {
 	}
 
-	// Exit a parse tree produced by yagParser#bound_range.
-	exitBound_range(ctx) {
+	// Exit a parse tree produced by yagParser#expr.
+	exitExpr(ctx) {
 	}
 
 
@@ -146,6 +173,15 @@ export default class yagListener extends antlr4.tree.ParseTreeListener {
 
 	// Exit a parse tree produced by yagParser#vtype.
 	exitVtype(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#bound_range.
+	enterBound_range(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#bound_range.
+	exitBound_range(ctx) {
 	}
 
 
