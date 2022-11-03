@@ -16,7 +16,7 @@ int[0,1] sh_sg; // signed form (honest+private casting)
 </declaration>
 	<template>
 		<name x="5" y="5">Voter</name>
-		<parameter>int[1,N_V] id</parameter>
+		<parameter>   int[1,N_V] id</parameter>
 		<declaration>// Place local declarations here.
 int[0,2] mem_dec;
 int[0,1] mem_sg;

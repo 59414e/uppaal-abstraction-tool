@@ -10,6 +10,6 @@
 /v1_backup.js
 /xml_class_test.js
 /node_modules
-/Parser/YetAnotherGrammar/
-!/Parser/YetAnotherGrammar/yag.g4
 /output_files
+/Parser/YetAnotherGrammar/
+!/Parser/YetAnotherGrammar/*.g4

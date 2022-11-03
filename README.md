@@ -2,9 +2,17 @@
 
 ## Requirements
 
+* node.js (v14+)
 * antlr4 [(link)](https://github.com/antlr/antlr4/blob/4.6/doc/getting-started.md)
-* ps2pdf (optional)  
-`sudo apt-get install ghostscript`
+* ps2pdf (optional/qol)  
+
+
+dependencies:  
+
+* antlr4 (JS target)
+* xml2js
+* yargs
+
 
 
 ## Snippets
