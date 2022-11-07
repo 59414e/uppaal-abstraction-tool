@@ -1,6 +1,7 @@
 // ======================================================
 // antlr4
 import yagListener from "./YetAnotherGrammar/yagListener.js";
+import yagParser from "./YetAnotherGrammar/yagParser.js";
 // ======================================================
 
 export default class CustomListener1 extends yagListener{
@@ -75,6 +76,17 @@ export default class CustomListener1 extends yagListener{
 	enterVdec(ctx) {
         this._vlist.push(ctx);
 		ctx._varType = this._temp_curr_vtype;
+
+		// console.log(ctx.getSourceInterval());
+	
+		// if(ctx.parentCtx?._constant){
+			// console.log(ctx);
+			// console.log(yagParser.RULE_vdec)
+			// console.log(ctx)
+			// console.log(`${ctx.vid.text} is a const`)
+			// ctx.vid.text = "ABC";
+			// console.log(ctx.getText())
+		// }
 	}
 
 	// Exit a parse tree produced by yagParser#vdec.
@@ -197,6 +209,7 @@ export default class CustomListener1 extends yagListener{
 
 	// Exit a parse tree produced by yagParser#expr.
 	exitExpr(ctx) {
+		
 	}
 
 
@@ -220,6 +233,10 @@ export default class CustomListener1 extends yagListener{
 
 	// Enter a parse tree produced by yagParser#vtype.
 	enterVtype(ctx) {
+		if(ctx?.constant){
+			ctx.parentCtx._constant = true;
+		}
+		// console.log(ctx.parentCtx);
 	}
 
 	// Exit a parse tree produced by yagParser#vtype.
@@ -238,6 +255,40 @@ export default class CustomListener1 extends yagListener{
 
     //======================================================
 
+	templateFunction(ctx){
+		if (!ctx) return '';
+	
+		let n = ctx.getChildCount();
+		if (n == 0) {
+			return (d)=>`${d.hasOwnProperty(ctx.getText()) ? d[ctx.getText()] : ctx.getText()}`
+			// return (d)=>`${ctx.getText()}`;
+		} else {
+			return (d)=>`${Array.from({length:n}, (k,v)=>v).map(i=>(this.templateFunction(ctx.getChild(i))(d))).join(' ')}`;
+		}			
+	}
+
+	templateFunction1(ctx){
+		let rawStr = this.templateFunctionRec(ctx);
+		return (dict)=>{
+			
+		}
+	}
+
+	templateFunctionRec(ctx){
+		if (!ctx) return '';
+		
+		let n = ctx.getChildCount();
+		if(n==0){
+			return `this[${ctx.getText()}] ?? "${ctx.getText()}"`; // nullish coalescing to keep 0-values
+		}else{
+			let str_arr = []; // str concat and arr-push-join has almost the same perf
+			for(let i=0;i<n;i++){
+				str.push(this.templateFunctionRec(ctx.getChild(i)));
+			}
+			return str.join(' ')
+		}
+	}
+	
     
     joinToString(ctx) {
         if (!ctx) return '';

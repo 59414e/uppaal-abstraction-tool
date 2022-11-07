@@ -32,7 +32,7 @@ select_pair
 	: vid=ID ':' range=vtype
 	;
 assignment_label
-	: assignment_stmt (',' assignment_stmt)* ';'
+	: assignment_stmt (',' assignment_stmt)* 
 	;
 synchronisation_label
 	: chan=expr ('?'|'!')
@@ -40,7 +40,7 @@ synchronisation_label
 // end{ULABELS}
 
 vdec_list
-	: vtype vdec (',' vdec)* ';'
+	: type=vtype vdec (',' vdec)* ';'
 	;
 
 vdec
@@ -114,7 +114,7 @@ expr
 	;
 
 vtype
-	: ( (CONST? (INT | BOOL)) | (BCAST? CHAN)) (bound_range)?
+	: ( (constant=CONST? (INT | BOOL)) | (BCAST? CHAN)) (bound_range)?
 	;
 bound_range
 	: '[' expr ',' expr ']'

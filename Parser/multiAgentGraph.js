@@ -1,4 +1,46 @@
 import * as xml2js from 'xml2js';
+import antlr4 from 'antlr4';
+import yagLexer from './YetAnotherGrammar/yagLexer.js';
+import yagListener from "./YetAnotherGrammar/yagListener.js";
+import yagParser from './YetAnotherGrammar/yagParser.js';
+// ======================================================
+
+class ULabel{
+	constructor(_content, _kind){
+		this.content = _content;
+		if(_content?.length>0){
+			let ruleName = '';
+			switch(_kind){
+				case 'select':
+					ruleName = 'select_label';
+					break;
+				case 'guard':
+					ruleName = 'expr';
+					break;
+				case 'synchronisation':
+					ruleName = 'synchronisation_label';
+					break;
+				case 'assignment':
+					ruleName = 'assignment_label';
+					break;
+				default:
+					console.warn(`Unexpected kind of label ${_kind}.`)
+			}
+			let {tree, parser} = parseTreeWalk(_content, ruleName);
+			this.templateFunction = ctxTemplateFunction(tree);
+		}
+	}
+
+	stringWithContext(ctxContext={}){
+		return this?.templateFunction.call(ctxContext) ?? '';
+	}
+
+	toString(){
+		return this?._content ?? '';
+	}
+}
+
+const LABEL_KINDS = ['select', 'guard', 'synchronisation', 'assignment'];
 
 export default class MASGraph {
     constructor(str){
@@ -45,9 +87,14 @@ export default class MASGraph {
                         assignment: '',
                         synchronisation: ''
                     };
+
                     for(const l of t.label || []){
                         e[l.$.kind] = l._;
                     }
+
+					LABEL_KINDS.forEach(kind=>{
+						e[kind] = new ULabel(e[kind], kind);
+					})
 
                     // add entry for the out-/in-going edges
                     obj.nodes[e.src].edgesOut.push(e);
@@ -68,14 +115,14 @@ export default class MASGraph {
 
 
 
-// ======================================================
-// antlr4
-import yagListener from "./YetAnotherGrammar/yagListener.js";
-// ======================================================
 
 class MASParser extends yagListener{
     constructor(){
         super();
+
+		this.varOccurences = {};
+		this.varDeclarations = {};
+		this.constDict = {};
     }
 
 	// Enter a parse tree produced by yagParser#file.
@@ -107,6 +154,12 @@ class MASParser extends yagListener{
 
 	// Enter a parse tree produced by yagParser#vdec.
 	enterVdec(ctx) {
+		if(ctx.parentCtx?._constant){
+			// console.log(`${ctx.vid.text} is a const`)
+			this.constDict[ctx.vid.text] = ctx;
+		}else{
+			this.varDict[ctx.vid.text] = ctx;
+		}
 	}
 
 	// Exit a parse tree produced by yagParser#vdec.
@@ -215,6 +268,9 @@ class MASParser extends yagListener{
 
 	// Enter a parse tree produced by yagParser#vtype.
 	enterVtype(ctx) {
+		if(ctx?.constant){
+			ctx.parentCtx._constant = true;
+		}
 	}
 
 	// Exit a parse tree produced by yagParser#vtype.
@@ -229,4 +285,58 @@ class MASParser extends yagListener{
 	// Exit a parse tree produced by yagParser#assignmentOp.
 	exitAssignmentOp(ctx) {
 	}
+}
+
+
+function parseTreeWalk(input, ruleName = 'translation'){
+    const chars = new antlr4.InputStream(input);
+    const lexer = new yagLexer(chars);
+    const tokens = new antlr4.CommonTokenStream(lexer);
+    const parser = new yagParser(tokens);
+    parser.buildParseTrees = true;
+    const tree = parser[ruleName]();
+    const myListener = new MASParser();
+    antlr4.tree.ParseTreeWalker.DEFAULT.walk(myListener, tree);
+    return {
+        "tree": tree,
+        "parser": myListener
+    }
+}
+
+
+function ctxTemplateRec(ctx){
+	if (!ctx){ 
+		return '';
+	}else{
+		let n = ctx.getChildCount();
+		if(n==0){
+			// nullish coalescing to keep 0-values
+			return `this[${ctx.getText()}] ?? "${ctx.getText()}"`; 
+		}else{
+			// str concat and arr-push-join has almost the same performance
+			let str_arr = []; 
+			for(let i=0;i<n;i++){
+				str_arr.push(ctxTemplateRec(ctx.getChild(i)));
+			}
+			return str_arr.join(' ')
+		}
+	}
+}
+
+function ctxTemplateFunction(ctx){
+	let templateString = cleanUpStr(ctxTemplateRec(ctx));
+	return new Function("return `"+templateString +"`;");
+}
+
+function stringWithContext(templateFunction, templateVars){
+	return templateFunction.call(templateVars);
+}
+
+function cleanUpStr(str) {
+    return (
+        str.replace(/\s\.\s/g, '\.')     // remove whitepaces around dot
+            .replace(/[\s\,]*;/g, ';')   // remove "hanging" whitespace before semi-colon
+            .replace(/\s*\,/g, ',')      // remove whitespace preceeding the comma
+            .replace(/\,+/g,',')         // remove left-over commas
+    )
 }

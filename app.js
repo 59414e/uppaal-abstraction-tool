@@ -51,4 +51,4 @@ if(inputStr===null){
 }
 
 let mg = new MASGraph(inputStr);
-console.log(mg.agents.Authority);
+// console.log(mg.agents.Authority);
