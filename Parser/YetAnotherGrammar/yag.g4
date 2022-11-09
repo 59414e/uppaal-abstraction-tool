@@ -29,13 +29,13 @@ select_label
 	: select_pair (',' select_pair)*
 	;
 select_pair
-	: vid=ID ':' range=vtype
+	: vid=var_identifier ':' range=vtype
 	;
 assignment_label
 	: assignment_stmt (',' assignment_stmt)* 
 	;
 synchronisation_label
-	: chan=expr ('?'|'!')
+	: chan=expr symb=('?'|'!')
 	;
 // end{ULABELS}
 
@@ -44,7 +44,7 @@ vdec_list
 	;
 
 vdec
-	: vid=ID dim=arr_size? ('=' init=expr)?
+	: vid=var_identifier dim=arr_size? ('=' init=expr)?
 	;
 
 arr_size
@@ -58,7 +58,7 @@ fparam_list
 	: fparam (',' fparam)*
 	;
 fparam
-	: vtype pid=ID arr_size?
+	: vtype pid=var_identifier arr_size?
 	;
 
 block
@@ -89,8 +89,9 @@ expr_list
 	: expr (',' expr)*
 	;
 expr
-	: expr '.' ID
-	| expr '[' expr ']'
+	: expr '.' var_identifier
+	// | expr '[' ind=expr ']'
+	| vid=var_identifier dim=arr_size
 	| expr ('++' | '--')
 	| ('++' | '--' | '+' | '-') expr
 	| ('~' | '!') expr
@@ -106,11 +107,15 @@ expr
 	| expr ('||') expr
 	| <assoc = right> expr '?' expr ':' expr
 	| fid=ID '(' fargs=expr_list ')' // function call
-	| vid=ID
+	| vid=var_identifier
 	| INTEGER
 	| BOOLEAN
 	| '{' expr_list '}' // array 
 	| '(' expr ')'
+	;
+
+var_identifier
+	: ID
 	;
 
 vtype

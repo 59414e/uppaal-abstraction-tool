@@ -167,6 +167,15 @@ export default class yagListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by yagParser#var_identifier.
+	enterVar_identifier(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#var_identifier.
+	exitVar_identifier(ctx) {
+	}
+
+
 	// Enter a parse tree produced by yagParser#vtype.
 	enterVtype(ctx) {
 	}
