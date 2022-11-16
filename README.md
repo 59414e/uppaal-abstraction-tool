@@ -14,6 +14,14 @@ dependencies:
 * yargs
 
 
+## Input model 
+
+* must be syntactically correct (input verification is not provided)
+* guard expressions must be in DNF and may use only equality check `==` and `!=` against literal/const values (`x==y` can be translated into `x==c1 && y==c1 || ... || x==cn && y==ck`)
+* no function calls
+* no custom typedefs, structs 
+
+Most of the above could be resolved/lifted by additional preprocessing (could be added in future), yet should not have impact on expressivity power (modulo simulation).
 
 ## Snippets
 

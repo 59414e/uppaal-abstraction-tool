@@ -1405,7 +1405,7 @@ export default class yagParser extends antlr4.Parser {
 	            }
 
 	            this.state = 306;
-	            this.match(yagParser.CHAN);
+	            localctx.ch = this.match(yagParser.CHAN);
 	            break;
 	        default:
 	            throw new antlr4.error.NoViableAltException(this);
@@ -1415,7 +1415,7 @@ export default class yagParser extends antlr4.Parser {
 	        _la = this._input.LA(1);
 	        if(_la===27) {
 	            this.state = 309;
-	            this.bound_range();
+	            localctx.bound = this.bound_range();
 	        }
 
 	    } catch (re) {
@@ -1442,11 +1442,11 @@ export default class yagParser extends antlr4.Parser {
 	        this.state = 312;
 	        this.match(yagParser.LBRACK);
 	        this.state = 313;
-	        this.expr(0);
+	        localctx.bmin = this.expr(0);
 	        this.state = 314;
 	        this.match(yagParser.COMMA);
 	        this.state = 315;
-	        this.expr(0);
+	        localctx.bmax = this.expr(0);
 	        this.state = 316;
 	        this.match(yagParser.RBRACK);
 	    } catch (re) {
@@ -2804,14 +2804,12 @@ class VtypeContext extends antlr4.ParserRuleContext {
         this.parser = parser;
         this.ruleIndex = yagParser.RULE_vtype;
         this.constant = null; // Token
+        this.ch = null; // Token
+        this.bound = null; // Bound_rangeContext
     }
 
 	bound_range() {
 	    return this.getTypedRuleContext(Bound_rangeContext,0);
-	};
-
-	CHAN() {
-	    return this.getToken(yagParser.CHAN, 0);
 	};
 
 	INT() {
@@ -2820,6 +2818,10 @@ class VtypeContext extends antlr4.ParserRuleContext {
 
 	BOOL() {
 	    return this.getToken(yagParser.BOOL, 0);
+	};
+
+	CHAN() {
+	    return this.getToken(yagParser.CHAN, 0);
 	};
 
 	BCAST() {
@@ -2859,10 +2861,20 @@ class Bound_rangeContext extends antlr4.ParserRuleContext {
         super(parent, invokingState);
         this.parser = parser;
         this.ruleIndex = yagParser.RULE_bound_range;
+        this.bmin = null; // ExprContext
+        this.bmax = null; // ExprContext
     }
 
 	LBRACK() {
 	    return this.getToken(yagParser.LBRACK, 0);
+	};
+
+	COMMA() {
+	    return this.getToken(yagParser.COMMA, 0);
+	};
+
+	RBRACK() {
+	    return this.getToken(yagParser.RBRACK, 0);
 	};
 
 	expr = function(i) {
@@ -2874,14 +2886,6 @@ class Bound_rangeContext extends antlr4.ParserRuleContext {
 	    } else {
 	        return this.getTypedRuleContext(ExprContext,i);
 	    }
-	};
-
-	COMMA() {
-	    return this.getToken(yagParser.COMMA, 0);
-	};
-
-	RBRACK() {
-	    return this.getToken(yagParser.RBRACK, 0);
 	};
 
 	enterRule(listener) {

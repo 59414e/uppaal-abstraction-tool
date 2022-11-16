@@ -1730,12 +1730,14 @@ public class yagParser extends Parser {
 
 	public static class VtypeContext extends ParserRuleContext {
 		public Token constant;
+		public Token ch;
+		public Bound_rangeContext bound;
 		public Bound_rangeContext bound_range() {
 			return getRuleContext(Bound_rangeContext.class,0);
 		}
-		public TerminalNode CHAN() { return getToken(yagParser.CHAN, 0); }
 		public TerminalNode INT() { return getToken(yagParser.INT, 0); }
 		public TerminalNode BOOL() { return getToken(yagParser.BOOL, 0); }
+		public TerminalNode CHAN() { return getToken(yagParser.CHAN, 0); }
 		public TerminalNode BCAST() { return getToken(yagParser.BCAST, 0); }
 		public TerminalNode CONST() { return getToken(yagParser.CONST, 0); }
 		public VtypeContext(ParserRuleContext parent, int invokingState) {
@@ -1797,7 +1799,7 @@ public class yagParser extends Parser {
 				}
 
 				setState(306);
-				match(CHAN);
+				((VtypeContext)_localctx).ch = match(CHAN);
 				}
 				}
 				break;
@@ -1810,7 +1812,7 @@ public class yagParser extends Parser {
 			if (_la==LBRACK) {
 				{
 				setState(309);
-				bound_range();
+				((VtypeContext)_localctx).bound = bound_range();
 				}
 			}
 
@@ -1828,15 +1830,17 @@ public class yagParser extends Parser {
 	}
 
 	public static class Bound_rangeContext extends ParserRuleContext {
+		public ExprContext bmin;
+		public ExprContext bmax;
 		public TerminalNode LBRACK() { return getToken(yagParser.LBRACK, 0); }
+		public TerminalNode COMMA() { return getToken(yagParser.COMMA, 0); }
+		public TerminalNode RBRACK() { return getToken(yagParser.RBRACK, 0); }
 		public List<ExprContext> expr() {
 			return getRuleContexts(ExprContext.class);
 		}
 		public ExprContext expr(int i) {
 			return getRuleContext(ExprContext.class,i);
 		}
-		public TerminalNode COMMA() { return getToken(yagParser.COMMA, 0); }
-		public TerminalNode RBRACK() { return getToken(yagParser.RBRACK, 0); }
 		public Bound_rangeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1852,11 +1856,11 @@ public class yagParser extends Parser {
 			setState(312);
 			match(LBRACK);
 			setState(313);
-			expr(0);
+			((Bound_rangeContext)_localctx).bmin = expr(0);
 			setState(314);
 			match(COMMA);
 			setState(315);
-			expr(0);
+			((Bound_rangeContext)_localctx).bmax = expr(0);
 			setState(316);
 			match(RBRACK);
 			}

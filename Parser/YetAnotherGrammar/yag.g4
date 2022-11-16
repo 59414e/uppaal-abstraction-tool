@@ -119,10 +119,10 @@ var_identifier
 	;
 
 vtype
-	: ( (constant=CONST? (INT | BOOL)) | (BCAST? CHAN)) (bound_range)?
+	: ( (constant=CONST? (INT | BOOL)) | (BCAST? ch=CHAN)) (bound=bound_range)?
 	;
 bound_range
-	: '[' expr ',' expr ']'
+	: '[' bmin=expr ',' bmax=expr ']'
 	;
 
 assignmentOp
