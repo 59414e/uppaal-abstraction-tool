@@ -6,6 +6,9 @@
     "yargs": "^17.6.0"
   },
   "devDependencies": {
-    "jest": "^29.2.2"
+    "mocha": "^10.1.0"
+  },
+  "scripts": {
+    "test":"mocha"
   }
 }

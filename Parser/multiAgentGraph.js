@@ -4,171 +4,11 @@ import yagLexer from './YetAnotherGrammar/yagLexer.js';
 import yagListener from "./YetAnotherGrammar/yagListener.js";
 import yagParser from './YetAnotherGrammar/yagParser.js';
 import { DEBUG, INFO, WARN } from '../simpleLogger.js';
+import { INT16_MIN, INT16_MAX, MASParser, parseTreeWalk, ctxTemplateWithCallback, assignParseTree, cleanUpStr } from './masParser.js';
+import { ULABEL_KINDS, SelectULabel, GuardULabel, SynchronisationULabel, AssignmentULabel, ctxTemplateFunction} from './uLabel.js';
+import { cartesianProduct, arrayRange, arrayClone } from './utils.js';
+
 // ======================================================
-
-
-
-const INT16_MIN = -32768;
-const INT16_MAX = 32767;
-const ULABEL_KINDS = ['select', 'guard', 'synchronisation', 'assignment'];
-
-class ULabel {
-	constructor(_content) {
-		this.content = _content;
-	}
-	toString() {
-		return this.content ?? '';
-	}
-}
-
-class SelectULabel extends ULabel {
-	static ruleName = 'select_label';
-	constructor(_content) {
-		super(_content);
-		if (_content?.length > 0) {
-			assignParseTree.call(this, _content, SelectULabel.ruleName);
-			this.templateFunction = ctxTemplateFunction(this.tree);
-
-			// flat list of (non-const) variable identifiers
-			this.vars = new Set(Object.keys(this.parser._varOccurences))
-			
-			// <ID> to <VtypeContext>
-			this.pairs = this.tree.getTypedRuleContexts(
-				yagParser.Select_pairContext
-			).reduce(
-				(acc, pairCtx) => (
-					acc[pairCtx.vid.getText()] = pairCtx.range, 
-					acc
-				), 
-				{}
-			)
-		} else {
-			this.vars = new Set();
-		}
-	}
-
-	computeChoiceSpace(){
-		let arr = [];
-		for(const key in this.pairs){
-			let max = Number(this.pairs[key].bound.bmax.getText());
-			let min = Number(this.pairs[key].bound.bmin.getText());
-			arr.push(
-				Array.from(
-					{length:max-min+1},
-					(k,v)=>v+min
-				)
-			)
-		}
-		if(Object.keys(this.pairs).length===1){
-			return cartesianProduct(...arr).map(x=>[x])
-		}else{
-			return cartesianProduct(...arr);
-		}
-	}
-
-	// call string interpolation on a template
-	stringWithContext(ctxContext = {}) {
-		return this?.templateFunction.call(ctxContext) ?? '';
-	}
-}
-
-class AssignmentULabel extends ULabel {
-	static ruleName = 'assignment_label';
-	constructor(_content) {
-		super(_content);
-
-		if (_content.length > 0) {
-			assignParseTree.call(this, _content, AssignmentULabel.ruleName);
-			this.templateFunction = ctxTemplateFunction(this.tree);
-
-			// flat list of (non-const) variable identifiers
-			this.vars = new Set(Object.keys(this.parser._varOccurences));
-			// list of individual <Assignment_stmtContext> components
-			this.atomic = this.tree.getTypedRuleContexts(yagParser.Assignment_stmtContext);
-			this.pairs = this.tree.getTypedRuleContexts(yagParser.Assignment_stmtContext).map( ctx=>{
-				return [
-					ctx.lhs.vid.getText(),	// identifier
-					ctx.lhs?.dim ? ctxTemplateEval(ctx.lhs.dim) : '',  // evaluator of an arr index
-					ctxTemplateEval(ctx.rhs)	// evaluator of a rhs
-				]
-			});
-		} else {
-			this.vars = new Set();
-		}
-	}
-	// call string interpolation on a template
-	stringWithContext(ctxContext = {}) {
-		return this?.templateFunction.call(ctxContext) ?? '';
-	}
-
-
-	// all needed dict keys must be present
-	atomicEvalWithContext(ctxContext = {}){
-		let n = this.pairs.length;
-		for(let i=0; i<n; i++){
-			if(this.pairs[i][1]){
-				ctxContext[this.pairs[i][0]][(this.pairs[i][1].call(ctxContext))] = (this.pairs[i][2].call(ctxContext))
-			}else{
-				ctxContext[this.pairs[i][0]] = (this.pairs[i][2].call(ctxContext))
-			}
-		}
-		return ctxContext;		
-	}
-}
-
-// must be in DNF (+ only `==` or `!=` operators)
-class GuardULabel extends ULabel {
-	static ruleName = 'expr';
-	constructor(_content) {
-		super(_content);
-
-		if (_content.length > 0) {
-			assignParseTree.call(this, _content, GuardULabel.ruleName);
-			this.templateFunction = ctxTemplateFunction(this.tree);
-			this.templateEval = ctxTemplateEval(this.tree);
-			
-			// flat list of (non-const) variable identifiers
-			this.vars = new Set(Object.keys(this.parser._varOccurences))
-		} else {
-			this.vars = new Set();
-		}
-	}
-	// call string interpolation on a template
-	stringWithContext(ctxContext = {}) {
-		return this?.templateFunction.call(ctxContext) ?? '';
-	}
-
-	evalWithContext(ctxContext = {}){
-		return this.templateEval.call(ctxContext);
-	}
-}
-
-class SynchronisationULabel extends ULabel {
-	static ruleName = 'synchronisation_label';
-	constructor(_content) {
-		super(_content);
-
-		if (_content.length > 0) {
-			assignParseTree.call(this, _content, SynchronisationULabel.ruleName);
-			this.templateFunction = ctxTemplateFunction(this.tree);
-
-			// channel name
-			this.chan = this.tree.chan.vid.getText();
-			// `!` - emanate, `?` - receive
-			this.symb = this.tree.symb.text;
-			// arguments/parameters (e.g. array indices)
-			this.vars = new Set(Object.keys(this.parser._varOccurences).filter(n => n != this.tree.chan.vid.getText()))
-		} else {
-			this.vars = new Set();
-		}
-	}
-	// call string interpolation on a template
-	stringWithContext(ctxContext = {}) {
-		return this?.templateFunction.call(ctxContext) ?? '';
-	}
-}
-
-
 const UPPER_APPROX = 1;
 const LOWER_APPROX = 2;
 const UNIVERSE_PLACEHOLDER = `*`;
@@ -221,12 +61,18 @@ class DomainApproximation {
 }
 
 // class AgentGraph{
-// 	constructor(_declaration, _nodes, _edges){
-
+// 	constructor(){
+// 		this.nodes = {};
+// 		this.edges = [];
 // 	}
 
-// 	fromXML(){
+// 	fromXML(obj){
+		
+// 	}
 
+// 	setLocal(_local){
+// 		this.local = _local;
+// 		assignParseTree.call(this, this.local, 'translation')
 // 	}
 // }
 
@@ -234,18 +80,27 @@ const LCOLOR_WHITE = 1;
 const LCOLOR_GREY = 2;
 const LCOLOR_BLACK = 3;
 
-
 class MASGraph {
-	constructor(str) {
+	constructor(){
+		this.global = ''
+		this.agents = {};
+	}
+
+	setGlobal(_global){
+		this.global = _global;
+		assignParseTree.call(this, this.global, 'translation')
+	}
+
+	fromString(str) {
 		const xmlParser = new xml2js.Parser({
 			trim: true // trim the whitespace at the beginning and end of text nodes
 		});
-
+		
 		xmlParser.parseString(str, function (err, res) {
 			// global declarations
-			this.global = res.nta.declaration[0] ?? '';
-
-			assignParseTree.call(this, this.global, 'translation')
+			this.setGlobal(res.nta.declaration[0] ?? '')
+			// this.global = res.nta.declaration[0] ?? '';
+			// assignParseTree.call(this, this.global, 'translation')
 
 			let agents = {};
 
@@ -259,7 +114,7 @@ class MASGraph {
 
 				assignParseTree.call(obj, obj.local, 'translation')
 				
-				t.constDict = Object.assign({}, obj.parser.constDict, this.parser.constDict);
+				// t.constDict = Object.assign({}, obj.parser.constDict, this.parser.constDict);
 
 				// init location property is extracted outside to ensure consistency
 				obj.init = t.init[0]?.$?.ref;
@@ -322,7 +177,7 @@ class MASGraph {
 		for(const a in this.agents){
 			let t = this.agents[a];
 			t.edges = t.edges.flatMap(e=>{
-				if(e.select.content){
+				if(e.select?.content){
 					let res = [];
 					let choices = e.select.computeChoiceSpace();
 					// DEBUG(`${Object.keys(e.select.pairs).join(',')} hav following choices:`);
@@ -358,7 +213,7 @@ class MASGraph {
 		for(const a in this.agents){
 			let t = this.agents[a];
 			t.edges = t.edges.flatMap(e=>{
-				if(e.guard.content){
+				if(e.guard?.content){
 					let res = [];
 					let disjunctiveTerms = e.guard.content.split('||');
 				
@@ -477,9 +332,62 @@ class MASGraph {
 	}
 
 
-
+	// TOFIX: add tparam parsing
 	toXML() {
-		// todo
+		let str = 
+`<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+    <declaration>${escapeHtml(cleanUpStr(this.global))}</declaration>`
+		for(const a in this.agents){
+			let agent = this.agents[a];
+			str += `
+	<template>
+		<name>${a}</name>`
+			if(agent.tparam){
+				//todo
+			}
+			str += `
+		<declaration>${escapeHtml(cleanUpStr(agent.local))}
+		</declaration>`
+			for(const n in agent.nodes){
+				str+=`
+		<location id="${n}"${agent.nodes[n].pos.x ? " x=\""+agent.nodes[n].pos.x+"\"" : ''}${agent.nodes[n].pos.y ? " y=\""+agent.nodes[n].pos.y+"\"" : ''}>
+		${agent.nodes[n].name}
+		</location>`
+			}
+			str += `
+		<init ref="${agent.init}"/>`
+			for(const e of agent.edges){
+				str+=`
+		<transition>
+			<source ref="${e.src}"/>
+			<target ref="${e.trg}"/>`
+				ULABEL_KINDS.forEach(kind=>{
+					if(e[kind]?.content){
+						str+=`
+				<label kind="${kind}">${escapeHtml(cleanUpStr(e[kind].content))}</label>`
+					}
+				})
+				str+=`
+		</transition>`
+			}
+			str+=`
+	</template>`
+		}
+
+		str+=`
+	<system>
+		system ${Object.keys(this.agents).join(',')};
+    </system>
+    <queries>
+        <query>
+            <formula></formula>
+            <comment></comment>
+        </query>
+    </queries>
+</nta>`
+		return str;
 	}
 
 	// (temp) for debug
@@ -488,11 +396,15 @@ class MASGraph {
 			console.log(`Agent ${a}`);
 			console.group();
 			this.agents[a].edges.forEach(e => {
-				console.log(`${e.src} --[${e.select.content ? e.select.content+' ' : ''} ${e.guard.content || 'T'} : ${e.synchronisation.content}${e.assignment.content || '_'} ]-> ${e.trg}`)
+				console.log(`${e.src} --[${e.select?.content ? e.select.content+' ' : ''} ${e.guard?.content || 'T'} : ${e?.synchronisation?.content ?? ''}${e.assignment?.content || '_'} ]-> ${e.trg}`)
 			});
 			console.groupEnd();
 		}
 	}
+}
+
+function printEdge(e){
+	console.log(`${e.src} --[${e.select?.content ? e.select.content+' ' : ''} ${e.guard?.content || 'T'} : ${e?.synchronisation?.content ?? ''}${e.assignment?.content || '_'} ]-> ${e.trg}`)
 }
 
 
@@ -509,8 +421,9 @@ function approximateLocalDomain(masGraph, params, approxType) {
 	}
 	// todo: derive varType and varInit from varName
 	let targetVars = params.targetVars;
-	let targetVarIndexOf = targetVars.reduce((acc,el,ind)=>(acc[el]=ind, acc), {});
+	let targetVarIndexOf = targetVars.reduce((acc,el,ind)=>(acc[el]=ind, acc), {});	
 
+	let agentNames = Object.keys(masGraph.agents);
 	let targetAgent = params.targetTemplate ? masGraph.agents[params.targetTemplate] : masGraph.agents[agentNames[0]];
 
 
@@ -520,8 +433,14 @@ function approximateLocalDomain(masGraph, params, approxType) {
 	let edges = targetAgent.edges;	// edge array
 	let locIni = targetAgent.init;	// loc ID
 
-	// template-based approximation (NOT instance-based)
+	// template-based approximation (i.e., NOT instance-based)
 	if (params.targetTemplate) {
+		// params.targetVars must be local variables
+		if(!targetVars.reduce((acc, v)=>acc && targetAgent.parser._varDeclarations.hasOwnProperty(v), true)){
+			WARN(`For template-based approximation, target variables must be owned by the target template!`)
+			return -1;
+		}
+
 		// recompute edgesTo as it contain references
 		loc = locNames.reduce((acc, x) => (acc[x] = { ...loc[x] }, acc[x].edgesTo = {}, acc), {})
 
@@ -544,13 +463,15 @@ function approximateLocalDomain(masGraph, params, approxType) {
 			}
 			return x;
 		});
+
+
 	}
 
-	// eval+merge the varDecDom
-	
+	// eval+merge the varDecDom	
 	for(const p in masGraph.parser.varDecDom){
 		masGraph.parser.varDecDom[p].range = [eval(masGraph.parser.varDecDom[p].range[0]),eval(masGraph.parser.varDecDom[p].range[1])]
-		masGraph.parser.varDecDom[p].dim = eval(masGraph.parser.varDecDom[p].dim);
+		// masGraph.parser.varDecDom[p].dim = eval(masGraph.parser.varDecDom[p].dim);
+		masGraph.parser.varDecDom[p].dim = (''+masGraph.parser.varDecDom[p].dim).split(/[\]\[]+/).filter(x=>x).map(a=>eval(a)).reduce((acc,el)=>acc*Number(el), 1)
 	}
 
 	for(const p in targetAgent.parser.varDecDom){
@@ -572,7 +493,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 	}
 	if(targetAgent.tparam){
 		for(const v in targetAgent.tparam){
-			varDomainView[v] = arrayRange(targetAgent.tparam[v][0], targetAgent.tparam[v][1]);
+			varDomainView[v] = arrayRange(Number(targetAgent.tparam[v][0]), Number(targetAgent.tparam[v][1]));
 		}
 	}
 
@@ -607,7 +528,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		edge.ignore = ULABEL_KINDS.reduce((acc, kind) => acc && edge[kind].ignore, true)
 		// console.log(edge.vars);
 		// console.log(varDomainView);
-		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(acc*varDomainView[el].length), 1)
+		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(console.log(el), acc*varDomainView[el].length), 1)
 	})
 
 	const startEmpty = (approxType === UPPER_APPROX);
@@ -620,6 +541,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 			acc),
 		{}
 	);
+
+	
 
 	localDomain[locIni].vals = {
 		[params.initVal.join(',')]:[...params.initVal]
@@ -691,43 +614,44 @@ function approximateLocalDomain(masGraph, params, approxType) {
 				localDomain[trg][approxOp](localDomain[src].vals);
 			}else{
 				// assuming unfolded edges
-				// let prodSize = 1;
 				let prodSize = edge.paramSpaceSize;
 				let res = {};
-				
-				// [...edge.vars].forEach(v=>{
-				// 	console.log(v);
-				// 	prodSize *= varDomainView[v].length;
-				// })
-
-				for(const currVec in localDomain[src].vals){
+				for(const vecStr in localDomain[src].vals){
+					let currVec = localDomain[src].vals[vecStr];
 					let ctxContext = {};
 
 					// fill vars from ld
 					for(const v of targetVars){
-						ctxContext[v] = currVec[targetVarIndexOf[v]]
+						ctxContext[v] = currVec[targetVarIndexOf[v]];
+						// if array - make its copy to avoid changing the original values
+						if(Array.isArray(ctxContext[v])){
+							ctxContext[v] = arrayClone(ctxContext[v]);
+						}
 					}
+
 					// fill remaining vars
 					for(let i=0;i<prodSize;i++){
+						let edgeContext = Object.assign({}, ctxContext);
+						
 						let k = i;
 						
 						for(const v of edge.vars){
 							let l = varDomainView[v].length;
-							ctxContext[v] = varDomainView[v][k%l];
-							k/=l;
+							edgeContext[v] = varDomainView[v][k%l];
+							k=Math.floor(k/l);
 						}
 	
-						if(!edge.guard.ignore && !edge.guard.evalWithContext(ctxContext)){
+						if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){
 							continue;
 						}
 						if(!edge.assignment.ignore){
-							edge.assignment.atomicEvalWithContext(ctxContext)
-							let tmpVec = targetVars.map(v=>ctxContext[v]);
-
+							edge.assignment.atomicEvalWithContext(edgeContext)
+							let tmpVec = targetVars.map(v=>edgeContext[v]);
 							res[tmpVec.join(',')] = tmpVec;
 						}
 					}	
 				}
+
 
 				if(Object.keys(res).length!=0){
 					localDomain[trg][approxOp](res);
@@ -738,279 +662,279 @@ function approximateLocalDomain(masGraph, params, approxType) {
 }
 
 
-class MASParser extends yagListener {
-	constructor() {
-		super();
-
-		this._varOccurences = {};
-
-		// maps <ID> to its <VDEC> ctx
-		this._varDeclarations = {}; // NOTE, it is disjoint with constDict
-
-		this.varDecDom = {};
-
-		this.constDict = {};
-
-		// satelite data
-		this.data = {};
+function substituteConsts(tree, dict){
+	let str_arr = [];
+	let n = tree.getChildCount();
+	for(let i=0;i<n;i++){
+		let curr = tree.getChild(i);
+		// remove const declarations
+		if(curr?.type?.constant){
+			// DEBUG(`Consumed const declaration: "${curr.getText()}"`);
+			continue;
+		}
+		// substitute const occurences
+		str_arr.push( ctxTemplateWithCallback(curr, (x)=> dict[x.getText()] ?? x.getText()) )
 	}
+	// newly formed string
+	return cleanUpStr(str_arr.join('\n'));
+}
 
-	// Enter a parse tree produced by yagParser#translation.
-	enterTranslation(ctx) {
-	}
+function prependVarIds(tree, prefix){
+	return ctxTemplateWithCallback(tree, (x)=>(prefix + x.getText()))
+}
 
-	// Exit a parse tree produced by yagParser#translation.
-	exitTranslation(ctx) {
-	}
+// in-place computation
+function unfoldTemplates(mg){
+	let agentNames = Object.keys(mg.agents);
+	let numberOfAgents = Object.keys(mg.agents).length;
+	let agents = {}
 
-	// Enter a parse tree produced by yagParser#select_label.
-	enterSelect_label(ctx) {
-		// <ID> to <vtype_CTX>
-		// this.data["select"] = {};
-	}
+	let constDict = mg.parser.constDict;
+	let sharedVars = Object.keys(mg.parser._varDeclarations).reduce((acc,x)=>(acc[x]=1,acc),{});
 
-	// Exit a parse tree produced by yagParser#select_label.
-	exitSelect_label(ctx) {
-	}
+	let global = substituteConsts(mg.tree, constDict);
 
+	
+	// extract constants and remove+substitute tparam occurrences
+	for(const a in mg.agents){
+		let t = mg.agents[a];
 
-	// Enter a parse tree produced by yagParser#select_pair.
-	enterSelect_pair(ctx) {
-		// this.data["select"][ctx.vid.getText()] = ctx.range;
-	}
+		let tconstDict = Object.assign({}, constDict, t.parser.constDict);
+		t.local = substituteConsts(t.tree, tconstDict);
 
-	// Exit a parse tree produced by yagParser#select_pair.
-	exitSelect_pair(ctx) {
-	}
+		if(!t.tparam){
+			agents[a] = t;
+			t.edges = t.edges.map(e=>{
+				let res = {
+					"src": e.src,
+					"trg": e.trg,
+					"select": new SelectULabel(e["select"]?.content ? e["select"].stringWithContext(tconstDict) : ''),
+					"guard": new GuardULabel(e["guard"]?.content ? e["guard"].stringWithContext(tconstDict) : ''),
+					"synchronisation": new SynchronisationULabel(e["synchronisation"]?.content ? e["synchronisation"].stringWithContext(tconstDict) : ''),
+					"assignment": new AssignmentULabel(e["assignment"]?.content ? e["assignment"].stringWithContext(tconstDict) : ''),
+				}
+				return res;
+			})
+			continue;
+		}
 
+		let tparamNames = Object.keys(t.tparam);
+		let tparamRanges = tparamNames.map(p=>{
+			let left = constDict.hasOwnProperty(t.tparam[p][0]) ? constDict[t.tparam[p][0]]: t.tparam[p][0];
+			let right = constDict.hasOwnProperty(t.tparam[p][1]) ? constDict[t.tparam[p][1]]: t.tparam[p][1];
+			return arrayRange(Number(left), Number(right));
+		})
+		// let tparamVals = cartesianProduct(tparamNames.map(p=>t.tparam[p]));
+		let tparamVals = cartesianProduct(...tparamRanges);
 
-	// Enter a parse tree produced by yagParser#assignment_label.
-	enterAssignment_label(ctx) {
-		// children of the <ctxType> = <Assignment_stmtContext> 
-		// this.data["assignment"] = ctx.getTypedRuleContexts(yagParser.Assignment_stmtContext) ?? [];
-	}
+		// DEBUG(`${a} is a template with parameters ${tparamNames.join(',')}:`)
+		let i = 1;
+		for(let tparamVal of tparamVals){
+			let instanceName = `${a}_${i++}`;
+			let obj = {};
+			if(!Array.isArray(tparamVal))tparamVal = [tparamVal];
+			let paramContext1 = tparamVal.reduce((acc,el,ind)=>(acc[tparamNames[ind]]=el,acc), {});
+			paramContext1 = Object.assign({}, tconstDict, paramContext1)
+			const handler = {
+				get(target, prop, receiver) {
+					if ( !paramContext1.hasOwnProperty(prop) && !sharedVars.hasOwnProperty(prop)) {
+					  return instanceName + '_' + prop;
+					}
+					return Reflect.get(...arguments);
+				  },
+			}
 
-	// Exit a parse tree produced by yagParser#assignment_label.
-	exitAssignment_label(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#synchronisation_label.
-	enterSynchronisation_label(ctx) {
-		// find the outter array identifier (if any)
-		// let curr = ctx.chan;
-		// while(curr.getChildCount()!=1){
-		// 	curr = curr.getChild(0);
-		// }
-	}
-
-	// Exit a parse tree produced by yagParser#synchronisation_label.
-	exitSynchronisation_label(ctx) {
-		// let chanName = ctx.chan.vid.getText()
-		// let chanArgs = {};
-		// for(const vid in this._varOccurences){
-		// 	if(vid!=chanName){
-		// 		chanArgs[vid] = this._varOccurences[vid];
-		// 	}
-		// }
-
-		// this.data['synchronisation'] = {
-		// 	name: ctx.chan.vid.getText(),
-		// 	args: Object.keys(this._varOccurences).filter(n=>n!=ctx.chan.vid.getText()),
-		// 	symb: ctx.symb.text,
-		// }
-	}
-
-
-	// Enter a parse tree produced by yagParser#vdec_list.
-	enterVdec_list(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#vdec_list.
-	exitVdec_list(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#vdec.
-	enterVdec(ctx) {
-		if (ctx.parentCtx?._constant) {
-			// this.constDict[ctx.vid.getText()] = ctx;
-			this.constDict[ctx.vid.getText()] = ctx.init.getText();
-		} else {
-			this._varDeclarations[ctx.vid.getText()] = ctx;
+			// dummy rename for local-scope variables
+			const paramContext = new Proxy(paramContext1, handler)
 			
-			// ignore chans
-			if(!ctx.parentCtx.type.ch){
-				this.varDecDom[ctx.vid.getText()] = {
-					range: ctx.parentCtx.type.bound ? [ctx.parentCtx.type.bound.bmin.getText(), ctx.parentCtx.type.bound.bmax.getText()] : [INT16_MIN, INT16_MAX], 
-					dim: ctx.dim ? (ctx.dim.getText()) : 0
-				}			
+			// TOFIX: line below is for the testing only (should be removed after)
+			obj.local = tparamVal.reduce((acc,el,ind)=>(acc+=`int ${tparamNames[ind]} = ${el};\n`,acc), '');
+			// TOFIX: line above is for the testing only (should be removed after)
+			obj.local += substituteConsts(t.tree, paramContext);
+			assignParseTree.call(obj, obj.local, 'translation')
+			
+			// obj.local = prependVarIds(obj.tree, instanceName+'_')
+			// assignParseTree.call(obj, obj.local, 'translation')
+
+			obj.nodes = Object.keys(t.nodes).reduce((acc,el)=>(
+				acc[el] = {
+					name: t.nodes[el].name,
+					pos: {
+						x: t.nodes[el].pos.x,
+						y: t.nodes[el].pos.y
+					},
+					edgesTo:{}
+				}, acc
+			),{})
+
+			obj.init = t.init;
+
+			obj.tparam = null;
+
+			obj.edges = t.edges.map(e=>{
+				let res = {
+					"src": e.src,
+					"trg": e.trg,
+					"select": new SelectULabel(e["select"]?.content ? e["select"].stringWithContext(paramContext) : ''),
+					"guard": new GuardULabel(e["guard"]?.content ? e["guard"].stringWithContext(paramContext) : ''),
+					"synchronisation": new SynchronisationULabel(e["synchronisation"]?.content ? e["synchronisation"].stringWithContext(paramContext) : ''),
+					"assignment": new AssignmentULabel(e["assignment"]?.content ? e["assignment"].stringWithContext(paramContext) : ''),
+				}
+				return res;
+			})
+
+			agents[instanceName] = obj;
+		}
+	}
+
+	mg.setGlobal(global)
+	mg.agents = agents;
+	mg.updateEdgesToForAll();
+}
+
+
+// for the extended edges that originate from a non-synched local transition there is no need to re-initialize the labels with their parsing (thus merely pointers will be used)
+function computeExtMAS(mg){
+	let agentNames = Object.keys(mg.agents);
+	let numberOfAgents = Object.keys(mg.agents).length;
+	let xlocationChunks = {}; // maps extended location {string} to its components {Array.<string>}
+
+	let xinitChunks = agentNames.map(t=>mg.agents[t].init); // extended initial location
+	let xinit = xinitChunks.join(',')
+	let xedges = [];
+	
+	xlocationChunks[xinit] = xinitChunks;
+	let myq = [xinit];
+
+	// extract/copy sync'd from edgesTo
+	for(const a in mg.agents){
+		for(const n in mg.agents[a].nodes){
+			let syncEdges = {
+				'?':{},
+				'!':{}
+			};
+			for(const trg in mg.agents[a].nodes[n].edgesTo){
+				for(const e of mg.agents[a].nodes[n].edgesTo[trg]){
+					if(e.synchronisation?.content){
+						let symb = e.synchronisation.symb;
+						let chan = e.synchronisation.chan;
+						if(syncEdges[symb].hasOwnProperty(chan)){
+							syncEdges[symb][chan].push(e)
+						}else{
+							syncEdges[symb][chan] = [e]
+						}
+					}
+				}
+			}
+			mg.agents[a].nodes[n].syncEdges = syncEdges;
+		}
+	}
+
+	while(myq.length!=0){
+		let xcurr = myq.shift();
+		DEBUG(`current location ${xcurr}`)
+		let chunks = xlocationChunks[xcurr];
+		for(let i=0;i<numberOfAgents;i++){
+			let currAgentGraph = mg.agents[agentNames[i]];
+			let currAgentChunk = chunks[i];
+			for(const trg in currAgentGraph.nodes[currAgentChunk].edgesTo){
+				// equivalent to flatmat iteration over all outgoing edges
+				// let xtrgChunks = chunks.map((el,ind)=> ind==i ? trg: el);
+				let xtrgChunks = [...chunks];
+				xtrgChunks[i] = trg;
+				let xtrg = xtrgChunks.join(',');
+				for(const e in currAgentGraph.nodes[currAgentChunk].edgesTo[trg]){
+					if(e.synchronisation?.content){
+						// todo[3]: introduce a filter to skip those
+						continue;
+					}else{
+						xedges.push({
+							"src": xcurr,
+							"trg": xtrg, 
+							"select": e.select,
+							"synchronisation": e.synchronisation,
+							"guard": e.guard,
+							"assignment": e.assignment
+						})
+					}
+				}
+				// add trg to the list of locations if new
+				if(!xlocationChunks.hasOwnProperty(xtrg)){
+					DEBUG(`adding new location ${xtrg}`)
+					xlocationChunks[xtrg]=xtrgChunks;
+					myq.push(xtrg);
+				}
 			}
 		}
-	}
 
-	// Exit a parse tree produced by yagParser#vdec.
-	exitVdec(ctx) {
-	}
+		// process sync'd transitions
+		for(let i=0;i<numberOfAgents;i++){
+			let currAgentGraph = mg.agents[agentNames[i]];
+			let currAgentChunk = chunks[i];
+			
+			for(let j=0;j<numberOfAgents;j++){
+				if(i==j)continue;
+				let otherAgentGraph = mg.agents[agentNames[j]];
+				let otherAgentChunk = chunks[j];
+				
+				for(const chan in currAgentGraph.nodes[currAgentChunk].syncEdges['!']){
+					
+					if(otherAgentGraph.nodes[otherAgentChunk].syncEdges['?'].hasOwnProperty(chan)){
+						let sndEdges = currAgentGraph.nodes[currAgentChunk].syncEdges['!'][chan];
+						let rcvEdges = otherAgentGraph.nodes[otherAgentChunk].syncEdges['?'][chan];
+						
+						for(const e1 of sndEdges){
+							for(const e2 of rcvEdges){
+								let xtrgChunks = [...chunks];
+								xtrgChunks[i] = e1.trg;
+								xtrgChunks[j] = e2.trg;							
+								let xtrg = xtrgChunks.join(',');
 
+								let unformatttedLabels = ["select", "guard", "assignment"].reduce((acc,kind)=>{
+									acc[kind] = [e1[kind].content, e2[kind].content].filter(x=>x.length);
+									return acc;
+								}, {})
+								
+								xedges.push({
+									"src": xcurr,
+									"trg": xtrg, 
+									"select": new SelectULabel(unformatttedLabels["select"].join(',\n')),
+									"synchronisation": '',
+									"guard": new GuardULabel(unformatttedLabels["guard"].join(' && ')),
+									"assignment": new AssignmentULabel(unformatttedLabels["assignment"].join(',\n'))
+								})
 
-	// Enter a parse tree produced by yagParser#arr_size.
-	enterArr_size(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#arr_size.
-	exitArr_size(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#fdec.
-	enterFdec(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#fdec.
-	exitFdec(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#fparam_list.
-	enterFparam_list(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#fparam_list.
-	exitFparam_list(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#fparam.
-	enterFparam(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#fparam.
-	exitFparam(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#block.
-	enterBlock(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#block.
-	exitBlock(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#statement.
-	enterStatement(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#statement.
-	exitStatement(ctx) {
+								// add trg to the list of locations if new
+								if(!xlocationChunks.hasOwnProperty(xtrg)){
+									xlocationChunks[xtrg]=xtrgChunks;
+									myq.push(xtrg);
+								}
+							}
+						}
+					}
+				}
+			}			
+		}		
 	}
 
 
-	// Enter a parse tree produced by yagParser#assignment_stmt.
-	enterAssignment_stmt(ctx) {
+	// parse results into a MASGraph instance
+
+	let res = new MASGraph();
+	res.setGlobal(mg.global);
+	let obj = {
+		nodes: Object.keys(xlocationChunks).reduce((acc,el)=>(acc[el]={name:el, pos:{}},acc),{}),
+		edges: xedges,
+		local: Object.keys(mg.agents).reduce((acc,a)=>(acc+=mg.agents[a].local), '')
 	}
-
-	// Exit a parse tree produced by yagParser#assignment_stmt.
-	exitAssignment_stmt(ctx) {
+	assignParseTree.call(obj, obj.local, 'translation')
+	obj.init = xinit;
+	res.agents = {
+		"ext": obj
 	}
-
-
-	// Enter a parse tree produced by yagParser#case_block.
-	enterCase_block(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#case_block.
-	exitCase_block(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#expr.
-	enterExpr(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#expr.
-	exitExpr(ctx) {
-	}
-
-	// Enter a parse tree produced by yagParser#var_identifier.
-	enterVar_identifier(ctx) {
-		let id = ctx.getText();
-
-		if (!this._varOccurences.hasOwnProperty(id)) {
-			this._varOccurences[id] = [ctx];
-		} else {
-			this._varOccurences[id].push(ctx)
-		}
-	}
-
-	// Exit a parse tree produced by yagParser#var_identifier.
-	exitVar_identifier(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#expr_list.
-	enterExpr_list(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#expr_list.
-	exitExpr_list(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#bound_range.
-	enterBound_range(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#bound_range.
-	exitBound_range(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#vtype.
-	enterVtype(ctx) {
-		if (ctx?.constant) {
-			ctx.parentCtx._constant = true;
-		}
-	}
-
-	// Exit a parse tree produced by yagParser#vtype.
-	exitVtype(ctx) {
-	}
-
-
-	// Enter a parse tree produced by yagParser#assignmentOp.
-	enterAssignmentOp(ctx) {
-	}
-
-	// Exit a parse tree produced by yagParser#assignmentOp.
-	exitAssignmentOp(ctx) {
-	}
+	return res;
 }
 
-// invoke with function.prototype.call method to 
-function assignParseTree(input, ruleName) {
-	({ tree: this.tree, parser: this.parser } = parseTreeWalk(input, ruleName));
-}
-
-function parseTreeWalk(input, ruleName = 'translation') {
-	const chars = new antlr4.InputStream(input);
-	const lexer = new yagLexer(chars);
-	const tokens = new antlr4.CommonTokenStream(lexer);
-	const parser = new yagParser(tokens);
-	parser.buildParseTrees = true;
-	const tree = parser[ruleName]();
-	const myListener = new MASParser();
-	// tokens.fill()
-	// console.log(tokens.getTokens(0,tokens.getNumberOfOnChannelTokens())?.filter(x=>x.type==66).map(x=>x.text));
-
-	antlr4.tree.ParseTreeWalker.DEFAULT.walk(myListener, tree);
-	return {
-		"tree": tree,
-		"parser": myListener
-	}
-}
 
 // recursively constructs string template (raw, w/o interpolation)
 function ctxTemplateRec(ctx) {
@@ -1037,11 +961,7 @@ function ctxTemplateRec(ctx) {
 	}
 }
 
-// returns a string template interpolation function
-function ctxTemplateFunction(ctx) {
-	let templateString = cleanUpStr(ctxTemplateRec(ctx));
-	return new Function("return `" + templateString + "`;");
-}
+
 
 
 // auxiliary to ctxTemplateEval AST to stringTemplate procedure
@@ -1069,25 +989,13 @@ function ctxTemplateEvalRec(ctx) {
 	}
 }
 
-// A faster alternative for an eval()
-function ctxTemplateEval(ctx){
-	let templateString = cleanUpStr(ctxTemplateEvalRec(ctx));
-	return new Function("return (" + templateString + ");");
-}
+
 
 function stringWithContext(templateFunction, templateVars) {
 	return templateFunction.call(templateVars);
 }
 
-function cleanUpStr(str) {
-	return (
-		str.replace(/\s\.\s/g, '\.')     // remove whitepaces around dot
-			.replace(/[\s\,]*;/g, ';')   // remove "hanging" whitespace before semi-colon
-			.replace(/\s*\,/g, ',')      // remove whitespace preceeding the comma
-			.replace(/\,+/g, ',')         // remove left-over commas
-			.replace(/\s+(\?|\!)/g, '$1')	// remove whitespace preceeding ? or !
-	)
-}
+
 
 function extractMax(q, priority) {
 	if (q.size == 0) {
@@ -1099,28 +1007,28 @@ function extractMax(q, priority) {
 	return max;
 }
 
-// arr - array of arrays
-function cartesianProduct(...arr){
-    return arr.reduce(
-        // acc initialized with first arr
-        (acc, b) => acc.flatMap(
-            d => b.map(
-                e => [d, e].flat()
-            )
-        ),
-    );
+function edgeClone(e, callBackOnLabel){
+	return {
+		'src':e.src,
+		'trg':e.trg,
+		"select": new SelectULabel(callBackOnLabel(e.select) ?? ''),
+		"synchronisation": new SynchronisationULabel(callBackOnLabel(e.synchronisation) ?? ''),
+		"guard": new GuardULabel(callBackOnLabel(e.guard) ?? ''),
+		"assignment": new AssignmentULabel(callBackOnLabel(e.assignment) ?? '')
+	}
 }
 
 
-function arrayRange(from, to, inclusive = true){
-	return Array.from({length: to - from + (inclusive ? 1 : 0)}, (k,v)=>v+from);
+function escapeHtml(str){
+	return str.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 }
+
 
 /**
  * 
- * @param {Array<String>} nodes 
- * @param {Array<Object>} edges 
- * @returns 
+ * @param {Array.<string>} nodes 
+ * @param {Array.<Object>} edges 
+ * @returns {Object.<string,number>} maps node name to its reachability index
  */
 function reachabilityMap(nodes, edges) {
 	let n = nodes.length;
@@ -1156,4 +1064,4 @@ function reachabilityMap(nodes, edges) {
 }
 
 export default MASGraph;
-export { MASGraph, approximateLocalDomain };
+export { MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates }

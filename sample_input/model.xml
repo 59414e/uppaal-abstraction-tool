@@ -2,8 +2,8 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>// Place global declarations here.
-const int N_V = 5;
-const int N_C = 3;
+const int N_V = 3;
+const int N_C = 2;
 
 chan decl[N_V+1];
 chan coll[N_V+1];
