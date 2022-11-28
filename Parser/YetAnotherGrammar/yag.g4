@@ -31,11 +31,40 @@ select_label
 select_pair
 	: vid=var_identifier ':' range=vtype
 	;
+
+// TODO: redefine with atomic term (as entry rule to stmt | fcall)
 assignment_label
-	: assignment_stmt (',' assignment_stmt)* 
+	: (assignment_stmt|fcall) (',' (assignment_stmt|fcall))* 
 	;
+fcall	// quick-fix for assignment label parsing
+	: fid=ID '(' fargs=expr_list? ')'
+	; 
+
 synchronisation_label
 	: chan=expr symb=('?'|'!')
+	;
+
+// dnf
+// 	: conjuction (OR dnf)?
+// 	;
+// conjuction
+// 	: literal (AND conjuction)?
+// 	;
+dnf
+	: conjuction (OR conjuction)*
+	;
+
+conjuction
+	: literal (AND literal)*
+	;
+literal
+	: literal EQUAL literal
+	| literal NOTEQUAL literal
+	| BANG literal
+	| '(' literal ')'
+	// | (ID | INTEGER | BOOLEAN)
+	| var_identifier  arr_size?
+	| INTEGER | BOOLEAN
 	;
 // end{ULABELS}
 
@@ -43,7 +72,7 @@ vdec_list
 	: type=vtype vdec (',' vdec)* ';'
 	;
 
-vdec
+vdec 
 	: vid=var_identifier dim=arr_size? ('=' init=expr)?
 	;
 
@@ -106,7 +135,7 @@ expr
 	| expr ('&&') expr
 	| expr ('||') expr
 	| <assoc = right> expr '?' expr ':' expr
-	| fid=ID '(' fargs=expr_list ')' // function call
+	| fid=ID '(' fargs=expr_list? ')' // function call
 	| vid=var_identifier
 	| INTEGER
 	| BOOLEAN
@@ -114,7 +143,7 @@ expr
 	| '(' expr ')'
 	;
 
-var_identifier
+var_identifier // rule is redundand, but used to simplify parsing (rule different from function name)
 	: ID
 	;
 

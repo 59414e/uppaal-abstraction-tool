@@ -16,7 +16,8 @@ const UNIVERSE_PLACEHOLDER = `*`;
 // DomainApproximation is a mutable object, whose values are updated "in-place"
 // If immutable (and refined by assigning a reference to a value returned by an union/intersection) garbage collector would need to be considered
 
-//todo: consider using maps over objects
+// todo: consider using maps over objects
+// todo2: use obj/map instead of class
 class DomainApproximation {
 	constructor(_isEmptySet) {
 		this.vals = _isEmptySet ? {} : UNIVERSE_PLACEHOLDER;
@@ -345,7 +346,14 @@ class MASGraph {
 	<template>
 		<name>${a}</name>`
 			if(agent.tparam){
-				//todo
+				str+=`
+		<parameter>`
+				let tempArr = [];
+				for(const x in agent.tparam){
+					tempArr.push(`int[${agent.tparam[x][0]},${agent.tparam[x][1]}] ${x}`)
+				}
+				str += tempArr.join(',')
+				str+=`</parameter>`
 			}
 			str += `
 		<declaration>${escapeHtml(cleanUpStr(agent.local))}
@@ -528,7 +536,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		edge.ignore = ULABEL_KINDS.reduce((acc, kind) => acc && edge[kind].ignore, true)
 		// console.log(edge.vars);
 		// console.log(varDomainView);
-		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(console.log(el), acc*varDomainView[el].length), 1)
+		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(acc*varDomainView[el].length), 1)
 	})
 
 	const startEmpty = (approxType === UPPER_APPROX);
@@ -599,7 +607,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 
 	DEBUG(`local domain`);
 	DEBUG(localDomain);
-	return localDomain;
+	// return Object.entries(localDomain).map(x=>[x[0],Object.values(x[1].vals)]);
+	return Object.entries(localDomain);
 
 
 	function processEdgesBetween(src, trg) {
@@ -935,68 +944,6 @@ function computeExtMAS(mg){
 	return res;
 }
 
-
-// recursively constructs string template (raw, w/o interpolation)
-function ctxTemplateRec(ctx) {
-	if (!ctx) {
-		return '';
-	} else {
-		let n = ctx.getChildCount();
-
-		if (n == 0) {
-			if (ctx.symbol.type == yagParser.ID) {
-				// nullish coalescing to keep 0-values
-				return `$\{this["${ctx.getText()}"] ?? "${ctx.getText()}"\}`;
-			} else {
-				return ctx.getText();
-			}
-		} else {
-			// str concat and arr-push-join has almost the same performance
-			let str_arr = [];
-			for (let i = 0; i < n; i++) {
-				str_arr.push(ctxTemplateRec(ctx.getChild(i)));
-			}
-			return str_arr.join(' ')
-		}
-	}
-}
-
-
-
-
-// auxiliary to ctxTemplateEval AST to stringTemplate procedure
-function ctxTemplateEvalRec(ctx) {
-	if (!ctx) {
-		return '';
-	} else {
-		let n = ctx.getChildCount();
-
-		if (n == 0) {
-			if (ctx.symbol.type == yagParser.ID) {
-				// nullish coalescing to keep 0-values
-				return `this["${ctx.getText()}"]`;
-			} else {
-				return ctx.getText();
-			}
-		} else {
-			// str concat and arr-push-join has almost the same performance
-			let str_arr = [];
-			for (let i = 0; i < n; i++) {
-				str_arr.push(ctxTemplateEvalRec(ctx.getChild(i)));
-			}
-			return str_arr.join(' ')
-		}
-	}
-}
-
-
-
-function stringWithContext(templateFunction, templateVars) {
-	return templateFunction.call(templateVars);
-}
-
-
-
 function extractMax(q, priority) {
 	if (q.size == 0) {
 		DEBUG(`Attempting to extract from an empty queue`)
@@ -1007,14 +954,14 @@ function extractMax(q, priority) {
 	return max;
 }
 
-function edgeClone(e, callBackOnLabel){
+function edgeClone(e, callbackOnLabel){
 	return {
 		'src':e.src,
 		'trg':e.trg,
-		"select": new SelectULabel(callBackOnLabel(e.select) ?? ''),
-		"synchronisation": new SynchronisationULabel(callBackOnLabel(e.synchronisation) ?? ''),
-		"guard": new GuardULabel(callBackOnLabel(e.guard) ?? ''),
-		"assignment": new AssignmentULabel(callBackOnLabel(e.assignment) ?? '')
+		"select": new SelectULabel(callbackOnLabel(e.select) ?? ''),
+		"synchronisation": new SynchronisationULabel(callbackOnLabel(e.synchronisation) ?? ''),
+		"guard": new GuardULabel(callbackOnLabel(e.guard) ?? ''),
+		"assignment": new AssignmentULabel(callbackOnLabel(e.assignment) ?? '')
 	}
 }
 

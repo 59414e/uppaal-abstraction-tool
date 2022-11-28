@@ -50,12 +50,48 @@ export default class yagListener extends antlr4.tree.ParseTreeListener {
 	}
 
 
+	// Enter a parse tree produced by yagParser#fcall.
+	enterFcall(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#fcall.
+	exitFcall(ctx) {
+	}
+
+
 	// Enter a parse tree produced by yagParser#synchronisation_label.
 	enterSynchronisation_label(ctx) {
 	}
 
 	// Exit a parse tree produced by yagParser#synchronisation_label.
 	exitSynchronisation_label(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#dnf.
+	enterDnf(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#dnf.
+	exitDnf(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#conjuction.
+	enterConjuction(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#conjuction.
+	exitConjuction(ctx) {
+	}
+
+
+	// Enter a parse tree produced by yagParser#literal.
+	enterLiteral(ctx) {
+	}
+
+	// Exit a parse tree produced by yagParser#literal.
+	exitLiteral(ctx) {
 	}
 
 

@@ -267,7 +267,7 @@ function ctxTemplateWithCallback(ctx, cb) {
 		let n = ctx.getChildCount();
 
 		if (n == 0) {
-			if (ctx.symbol.type == yagParser.ID) {
+			if (ctx.symbol?.type == yagParser.ID) {
 				// nullish coalescing to keep 0-values
 				return cb(ctx);
 			} else {

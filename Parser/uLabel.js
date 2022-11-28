@@ -1,6 +1,7 @@
 import yagParser from './YetAnotherGrammar/yagParser.js';
-import { assignParseTree, ctxTemplateWithCallback, cleanUpStr } from './masParser.js';
-import { cartesianProduct } from './utils.js';
+import { assignParseTree, ctxTemplateWithCallback, cleanUpStr, parseTreeWalk } from './masParser.js';
+import { arrayClone, cartesianProduct } from './utils.js';
+import { DEBUG } from '../simpleLogger.js';
 
 const ULABEL_KINDS = ['select', 'guard', 'synchronisation', 'assignment'];
 
@@ -13,6 +14,7 @@ class ULabel {
 	}
 }
 
+// TODO: add lazy-load for all ULabel child classes
 class SelectULabel extends ULabel {
 	static ruleName = 'select_label';
 	constructor(_content) {
@@ -34,8 +36,11 @@ class SelectULabel extends ULabel {
 				), 
 				{}
 			)
+            this.selectors = new Set(Object.keys(this.pairs));
+
 		} else {
 			this.vars = new Set();
+            this.selectors = null;
 		}
 	}
 
@@ -68,49 +73,160 @@ class AssignmentULabel extends ULabel {
 	static ruleName = 'assignment_label';
 	constructor(_content) {
 		super(_content);
+        this.extended = false; // lazy-load properties on demand
+        
+        //todo: remove these lines after debug
 
-		if (_content.length > 0) {
-			assignParseTree.call(this, _content, AssignmentULabel.ruleName);
+        // this.atomicVars = (()=>{console.log(`trying to access property before extend`);})()
+        // this.vars = (()=>{console.log(`trying to access property before extend`);})()
+	}
+    
+    get vars(){
+        if(this.content!='' && !this.extended){
+            DEBUG("trying to access AssignmentULabel vars before extending, running extend");
+            this.extendProperties();
+            return this.vars;
+        }else{
+            return new Set();
+        }
+    }
+
+    get atomicVars(){
+        if(this.content!='' && !this.extended){
+            DEBUG("trying to access AssignmentULabel atomicVars before extending, running extend");
+            this.extendProperties();
+            return this.atomicVars;
+        }else{
+            return [];
+        }
+    }
+
+    extendProperties(){
+        if (this.content.length > 0) {
+			assignParseTree.call(this, this.content, AssignmentULabel.ruleName);
 			this.templateFunction = ctxTemplateFunction(this.tree);
 
+            let n = this.tree.getChildCount();
+            
+            this.atomic = [];
+            Object.defineProperty(this, "atomicVars", {
+                value: []
+            })
+            // this.atomicVars = [];
+            for(let i=0;i<n;i++){
+                let ctx = this.tree.getChild(i);
+                if(ctx?.ruleIndex === yagParser.RULE_assignment_stmt){
+                    // DEBUG(`stmt = ${ctx.getText()}`)
+                    this.atomic.push([
+                        'stmt',
+                        ctx,
+                        ctx.lhs?.vid.getText(),
+                        ctx.lhs?.dim ? ctxTemplateEval(ctx.lhs.dim) : '',
+                        ctxTemplateEval(ctx.rhs),
+                    ])
+                    this.atomicVars.push(Object.keys(parseTreeWalk(ctx.getText() ?? '', 'assignment_stmt').parser._varOccurences) ?? [])
+                }else if(ctx?.ruleIndex === yagParser.RULE_fcall){
+                    // DEBUG(`fcall = ${ctx.getText()}`)
+                    this.atomic.push([
+                        'fcall',
+                        ctx,
+                        ctx?.fid?.text,
+                        ctx?.fargs ? ctxTemplateEval(ctx.fargs) : ''
+                    ])
+                    // DEBUG(`fid = ${ctx?.fid?.text}`)
+                    // DEBUG(`fargs = ${ctx?.fargs?.getText()}`)
+                    if(ctx?.fargs){
+                        this.atomicVars.push(Object.keys(parseTreeWalk(ctx.fargs?.getText() ?? '', 'expr_list').parser._varOccurences) ?? [])
+                    }else{
+                        this.atomicVars.push([])
+                    }
+                    
+                }
+            }
 			// flat list of (non-const) variable identifiers
-			this.vars = new Set(Object.keys(this.parser._varOccurences));
-			// list of individual <Assignment_stmtContext> components
-			this.atomic = this.tree.getTypedRuleContexts(yagParser.Assignment_stmtContext);
-			this.pairs = this.tree.getTypedRuleContexts(yagParser.Assignment_stmtContext).map( ctx=>{
-				return [
-					ctx.lhs.vid.getText(),	// identifier
-					ctx.lhs?.dim ? ctxTemplateEval(ctx.lhs.dim) : '',  // evaluator of an arr index
-					ctxTemplateEval(ctx.rhs)	// evaluator of a rhs
-				]
-			});
-		} else {
-			this.vars = new Set();
+			// this.vars = new Set(Object.keys(this.parser._varOccurences));
+            Object.defineProperty(this, "vars", {
+                value: new Set(Object.keys(this.parser._varOccurences) ?? [])
+            })
 		}
-	}
+        this.extended = true;
+    }
+
 	// call string interpolation on a template
 	stringWithContext(ctxContext = {}) {
+        if(this.content=='' || Object.keys(ctxContext).length==0)return this.content;
+        if(!this.extended)this.extendProperties();
 		return this?.templateFunction.call(ctxContext) ?? '';
 	}
 
+    // toList(){
+    //     if(!this.extended)this.extendProperties();
+    //     return this.atomic?.map( ctx=>
+    //         [ctx.lhs.vid.getText(), ctx.lhs?.dim?.getText(), ctx.rhs.getText()]
+    //     )
+    // }
+
+    // ignores function calls
+    // getParameters(exceptSet = new Set()){
+    //     if(!this.extended)this.extendProperties();
+    //     return this?.atomic?.flatMap(ctx=>{
+    //         if(!exceptSet.has(ctx.lhs.vid.getText())){
+    //             return Object.keys(parseTreeWalk(ctx.rhs.getText(), 'expr').parser._varOccurences)
+    //         }else{
+    //             return [];
+    //         }
+    //     }) ?? [];   
+    // }
+
 
 	// all needed dict keys must be present
-	atomicEvalWithContext(ctxContext = {}){
-		let n = this.pairs.length;
-		for(let i=0; i<n; i++){
-			if(this.pairs[i][1]){
-				ctxContext[this.pairs[i][0]][(this.pairs[i][1].call(ctxContext))] = (this.pairs[i][2].call(ctxContext))
-			}else{
-				ctxContext[this.pairs[i][0]] = (this.pairs[i][2].call(ctxContext))
-			}
+	atomicEvalWithContext(ctxContextOrig = {}, inplace = true){
+        if(!this.extended)this.extendProperties();
+        let n = this.atomic.length;
+        if(n==0)return;
+
+        let ctxContext = inplace ? ctxContextOrig : Object.assign({}, ctxContextOrig); 
+        // deep copy array if not inplace
+        if(!inplace){
+            for(const p in ctxContext){
+                if(Array.isArray(ctxContext[p])){
+                    ctxContext[p] = arrayClone(ctxContext[p]);
+                }
+            }
+        }
+
+        for(let i=0; i<n; i++){
+            if(this.atomic[i][0]==='stmt'){
+                // let ctx = this.atomic[i][1];
+                let lhs = this.atomic[i][2];
+                let dim = this.atomic[i][3];
+                let rhs = this.atomic[i][4];
+                if(dim){
+                    ctxContext[lhs][dim.call(ctxContext)] = rhs.call(ctxContext)
+                }else{
+                    ctxContext[lhs] = rhs.call(ctxContext)
+                }       
+            }else if(this.atomic[i][0]=='fcall'){ // 
+                // do nothing
+            }else{
+                console.error(`AssignmentULabel - unexpected type of atomic statement ${this.atomic[i][0]}`)
+            }
 		}
+		// let n = this.pairs.length;
+		// for(let i=0; i<n; i++){
+		// 	if(this.pairs[i][1]){
+		// 		ctxContext[this.pairs[i][0]][(this.pairs[i][1].call(ctxContext))] = (this.pairs[i][2].call(ctxContext))
+		// 	}else{
+		// 		ctxContext[this.pairs[i][0]] = (this.pairs[i][2].call(ctxContext))
+		// 	}
+		// }
 		return ctxContext;		
 	}
 }
 
 // must be in DNF (+ only `==` or `!=` operators)
 class GuardULabel extends ULabel {
-	static ruleName = 'expr';
+	static ruleName = 'dnf';
 	constructor(_content) {
 		super(_content);
 
@@ -125,6 +241,49 @@ class GuardULabel extends ULabel {
 			this.vars = new Set();
 		}
 	}
+
+    // todo: add ctxContext param
+    shortCircuit(){
+        // todo: add tautology evaluation (e.g., A || !A, A && !A)
+        let n = this.tree.getChildCount();
+        let res = false; // neutral element for disj
+        for(let i=0;i<n;i++){
+            let ctx = this.tree.getChild(i);
+            // conj OR conj
+            if(ctx?.ruleIndex == yagParser.RULE_conjuction){
+                // literal AND literal
+                let m = ctx.getChildCount();
+                let conj_eval = true; // neutral element for conj
+                for(let j=0;j<m;j++){
+                    let curr = ctx.getChild(j);
+                    if(curr?.ruleIndex == yagParser.RULE_literal){
+                        try {
+                            let short = (new Function("return " + curr.getText() + ";"))();
+                            if(!short){
+                                conj_eval = false; 
+                                break;
+                            }else{
+                                continue; // while curr is true
+                            }
+                        }catch(error) {
+                            conj_eval = undefined; 
+                            continue;
+                        }
+                    }
+                }
+                if(conj_eval===false){  
+                    continue; // while conjunctions are false
+                }else if(conj_eval===true){
+                    return true;
+                }else{ 
+                    res = undefined;
+                    continue;
+                }
+            }
+        }
+        return res;
+    }
+
 	// call string interpolation on a template
 	stringWithContext(ctxContext = {}) {
 		return this?.templateFunction.call(ctxContext) ?? '';

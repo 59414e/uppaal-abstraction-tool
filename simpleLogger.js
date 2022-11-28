@@ -10,5 +10,5 @@ function DEBUG() { _VERBOSE_LEVEL >= 2 && console.log.apply(console, arguments);
 
 function GROUP(){_VERBOSE_LEVEL >= 2 && console.group.apply(console, arguments);}
 
+export default {};
 export {WARN, INFO, DEBUG, SET_VERBOSE, GROUP};
-export default{};

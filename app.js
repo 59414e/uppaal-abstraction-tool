@@ -2,6 +2,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as util from "util";
 
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
@@ -9,7 +10,9 @@ import { hideBin } from 'yargs/helpers'
 import {WARN, INFO, DEBUG, SET_VERBOSE} from './simpleLogger.js';
 import {MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates} from './Parser/multiAgentGraph.js';
 import { log } from 'console';
-
+import { generateAbstraction } from './Parser/generateAbstract.js';
+import { AssignmentULabel } from './Parser/uLabel.js';
+import { parseTreeWalk } from './Parser/masParser.js';
 
 const argv = yargs(hideBin(process.argv))
     .count('verbose')
@@ -24,10 +27,24 @@ const argv = yargs(hideBin(process.argv))
         },
         "verbose":{
             alias:'v',
-            describe: '0+warn, 1+info, 2+debug'
+            describe: 'choose verbosity level',
+            choices: [0,1,2]
+        }
+    })
+    .command({
+        command: 'configure <pairs...>',
+        aliases: ['config', 'cfg'],
+        desc: 'Modify a config variables',
+        handler: (argv) => {            
+            argv.pairs.forEach(element => {
+                // TODO: implement with config file
+                console.log(`will set ${element.split('=')[0]} to ${element.split('=')[1]}`);
+            });
         }
     })
     .argv;
+
+
 
 
 if(process.platform==='win32'){
@@ -49,6 +66,8 @@ function readIfExists(pathStr){
     }
 }
 
+if(!argv.input)process.exit(1);
+
 let inputStr = readIfExists(argv.input);
 
 // terminate if nothing was read
@@ -60,8 +79,47 @@ if(argv.verbose){
     SET_VERBOSE(argv.verbose)
 }
 
-// TODO: exec each of those as fork/child process
 
+
+
+
+
+
+
+// TODO: exec each of those as fork/child process
+let t = new AssignmentULabel("pack_sent[i]= x+y+22/2,foo(),bar(x,1), sh_vt = choice, temp = pack_sent[i] && pack_sent[j]")
+// console.log(t.stringWithContext());
+// console.log(t.vars);
+// console.log(t.atomicVars);
+
+
+
+
+// t = t.toList().map(x=>{
+//     return Object.keys(parseTreeWalk(x[2], 'expr').parser._varOccurences)
+// })
+
+
+
+
+// console.log(t.getParameters(new Set(['pack_sent'])));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// TODO: exec each of those as fork/child process
+if(true){
 // let mg = new MASGraph(inputStr);
 let mg = new MASGraph('');
 mg.fromString(inputStr)
@@ -111,16 +169,17 @@ unfoldTemplates(mg)
 
 
 console.log("==================================");
+let agentNames = Object.keys(mg.agents);
 mg = computeExtMAS(mg);
 mg.unfoldAlternatives();
 
 let s = mg.toXML();
-fs.writeFileSync('./output_files/unfolded_model.xml',s)
+// fs.writeFileSync('./output_files/unfolded_model.xml',s)
 
 mg = new MASGraph('');
 mg.fromString(s)
 
-console.log(Object.keys(mg.agents));
+// console.log(Object.keys(mg.agents));
 // let context = {
 //     "sh_sg":1,
 //     "sh_vt":2,
@@ -130,12 +189,70 @@ console.log(Object.keys(mg.agents));
 //     "dec_recv": [1,1,2],
 //     "pack_sent": [0,0,0]
 // }
-approximateLocalDomain(mg, {
+let ld = approximateLocalDomain(mg, {
     "targetVars": ['pack_sent'], 
     "initVal": [[0,0,0]],
     // "targetTemplate": "Authority"
 }, 1)
+
+
+console.log({agentNames});
+
+
+// console.log(util.inspect(ld, false, null, true /* enable colors */))
+
+
+// console.log(restrictionOfLocalDomain(ld, 3));
+
+let myd = restrictionOfLocalDomain(ld, 3);
+// console.log(util.inspect(d, false, null, true /* enable colors */))
+
+
+let mgOrig = new MASGraph();
+mgOrig.fromString(inputStr);
+
+
+
+
+
+
+
+let xml = generateAbstraction(mgOrig, {
+    template: "Authority",
+    scope: "*",
+    argsN: [],
+    argsR: ['pack_sent'],
+    "initVal": [[0,0,0]],
+    hash: '_',
+    d: myd
+})
+fs.writeFileSync('./output_files/abstract_model.xml',xml)
+
+
 console.log("==================================");
+// mgOrig.printEdges();
+
+
+
+function restrictionOfLocalDomain(ld, i, with_union=true, sep=','){
+    let res = {};
+    for(const pair of ld){
+        let lid = pair[0].split(sep)[i];
+        
+        if(!res.hasOwnProperty(lid)){
+            res[lid] = pair[1]
+        }else{
+            res[lid][with_union ? 'cup' : 'cap'](pair[1].vals)
+        }
+    }
+
+    for(const lid in res){
+        // console.log(res[lid]);
+        res[lid] = Object.values(res[lid].vals)
+    }
+    
+    return res;
+}
 
 
 // mg.agents.Authority.edges[0].assignment.atomicEvalWithContext(context);
@@ -182,3 +299,4 @@ console.log("==================================");
 // console.log(mg)
 
 
+}

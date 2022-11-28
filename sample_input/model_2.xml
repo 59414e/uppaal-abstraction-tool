@@ -16,7 +16,7 @@ int[0,1] sh_sg; // signed form (honest+private casting)
 </declaration>
 	<template>
 		<name x="5" y="5">Voter</name>
-		<parameter>int[1,N_V] id</parameter>
+		<parameter>   int[1,N_V] id</parameter>
 		<declaration>// Place local declarations here.
 int[0,2] mem_dec;
 int[0,1] mem_sg;
@@ -76,9 +76,7 @@ int[0,1] pack_sent[N_V+1];
 int[0,N_C] vt_recv[N_V+1]; 
 int[0,1] sg_recv[N_V+1]; 
 
-int[0,N_V] tally_1;
-int[0,N_V] tally_2;
-int[0,N_V] tally_3;
+int[0,N_V] tally[N_V+1];
 
 int tally_sum;
 </declaration>
@@ -97,9 +95,7 @@ int tally_sum;
 			<target ref="id4"/>
 			<label kind="select" x="256" y="-152">v_i:int[1,N_V]</label>
 			<label kind="synchronisation" x="256" y="-136">vote[v_i]?</label>
-			<label kind="assignment" x="256" y="-120">tally_1 = (sh_sg &amp;&amp; sh_vt==1) ? (tally_1 + 1) : tally_1,
-tally_2 = (sh_sg &amp;&amp; sh_vt==2) ? (tally_2 + 1) : tally_2,
-tally_3 = (sh_sg &amp;&amp; sh_vt==3) ? (tally_3 + 1) : tally_3,
+			<label kind="assignment" x="256" y="-120">tally[sh_vt] = (sh_sg) ? (tally[sh_vt] + 1) : tally[sh_vt],
 sh_vt=0,
 sh_sg=0</label>
 			<nail x="320" y="-64"/>
