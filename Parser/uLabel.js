@@ -7,10 +7,10 @@ const ULABEL_KINDS = ['select', 'guard', 'synchronisation', 'assignment'];
 
 class ULabel {
 	constructor(_content) {
-		this.content = _content;
+		this.content = _content ?? '';
 	}
 	toString() {
-		return this.content ?? '';
+		return this.content;
 	}
 }
 
@@ -74,11 +74,6 @@ class AssignmentULabel extends ULabel {
 	constructor(_content) {
 		super(_content);
         this.extended = false; // lazy-load properties on demand
-        
-        //todo: remove these lines after debug
-
-        // this.atomicVars = (()=>{console.log(`trying to access property before extend`);})()
-        // this.vars = (()=>{console.log(`trying to access property before extend`);})()
 	}
     
     get vars(){
@@ -229,9 +224,26 @@ class GuardULabel extends ULabel {
 	static ruleName = 'dnf';
 	constructor(_content) {
 		super(_content);
+        this.extended = false;
+	}
 
-		if (_content.length > 0) {
-			assignParseTree.call(this, _content, GuardULabel.ruleName);
+    get vars(){
+        if(!this.extended){
+            // DEBUG("trying to access GuardULabel vars before extending, running extend");
+            this.extendProperties();
+        }
+        return this.vars;
+    }
+
+    extendProperties(){
+        Object.defineProperty(this, 'vars', {
+            writable: true,
+            enumerable: true,
+            value: undefined
+        })
+        
+        if (this.content.length > 0) {
+			assignParseTree.call(this, this.content, GuardULabel.ruleName);
 			this.templateFunction = ctxTemplateFunction(this.tree);
 			this.templateEval = ctxTemplateEval(this.tree);
 			
@@ -240,7 +252,7 @@ class GuardULabel extends ULabel {
 		} else {
 			this.vars = new Set();
 		}
-	}
+    }
 
     // todo: add ctxContext param
     shortCircuit(){
@@ -286,10 +298,16 @@ class GuardULabel extends ULabel {
 
 	// call string interpolation on a template
 	stringWithContext(ctxContext = {}) {
+        if(!this.extended){
+            this.extendProperties();
+        }
 		return this?.templateFunction.call(ctxContext) ?? '';
 	}
 
 	evalWithContext(ctxContext = {}){
+        if(!this.extended){
+            this.extendProperties();
+        }
 		return this.templateEval.call(ctxContext);
 	}
 }

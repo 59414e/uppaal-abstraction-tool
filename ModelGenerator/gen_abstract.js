@@ -8,7 +8,7 @@ import yagLexer from '../Parser/YetAnotherGrammar/yagLexer.js';
 import yagParser from '../Parser/YetAnotherGrammar/yagParser.js';
 
 // custom libs/files
-import CONFIG from '../config.js';
+import CONFIG from '../tempConfig.js';
 import UppaalXML from '../Parser/uppaalxml.js';
 import CustomListener from '../Parser/customListener.js';
 // ============================================================

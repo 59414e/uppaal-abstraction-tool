@@ -38,6 +38,52 @@ function cartesianProduct(...arr) {
     );
 }
 
+function printTable(arr, header=[]){
+    let i,j;
+    let n=arr.length;
+    let m = arr?.[0].length;
+
+    let columnPad = new Array(m).fill(0)
+
+    if(header.length!==0 && header.length!==m){
+        console.error("#printTable: inconsistent header length")
+        return null;
+    }
+
+    // column width to fit header entries
+    header.forEach((attr,ind)=> columnPad[ind] = attr.length)
+
+    for(i=0;i<n;i++){
+        if(arr[i]?.length!==m){
+            console.error("#printTable: inconsistent number of columns among the rows of arr")
+            return null;
+        }
+        for(j=0;j<m;j++){
+            if(typeof arr[i][j]!=='string'){
+                arr[i][j]=arr[i][j].toString();
+            }
+            columnPad[j] = Math.max(arr[i][j].length, columnPad[j]);
+        }
+    }
+
+    // let str = header.map((x,ind)=>x.padEnd(columnPad[ind]+1, ' ')).join('\t');
+    let str = header.map((x,ind)=>x.padEnd(columnPad[ind], ' ')).join(' | ');
+    str += '\n' + columnPad.map(x=>'-'.repeat(x+1)).join('+-')
+    for(i=0;i<n;i++){
+        str+='\n'
+        
+        let row = [];
+        for(j=0;j<m;j++){
+            // str += arr[i][j].padEnd(columnPad[j]+1, ' ')+'\t';
+            row.push(arr[i][j].padEnd(columnPad[j], ' '))
+        }
+        
+        str += row.join(' | ')
+    }
+
+    console.log(str);
+}
+
 
 export default {};
-export { cartesianProduct, arrayRange, arrayClone }
+export { printTable, cartesianProduct, arrayRange, arrayClone }

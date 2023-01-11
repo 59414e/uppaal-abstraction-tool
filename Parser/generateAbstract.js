@@ -3,7 +3,7 @@ import antlr4 from 'antlr4';
 import yagLexer from './YetAnotherGrammar/yagLexer.js';
 import yagListener from "./YetAnotherGrammar/yagListener.js";
 import yagParser from './YetAnotherGrammar/yagParser.js';
-import { DEBUG, INFO, WARN } from '../simpleLogger.js';
+import { DEBUG, ERRR, WARN } from '../simpleLogger.js';
 import { INT16_MIN, INT16_MAX, MASParser, parseTreeWalk, ctxTemplateWithCallback, assignParseTree, cleanUpStr } from './masParser.js';
 import { ULABEL_KINDS, SelectULabel, GuardULabel, SynchronisationULabel, AssignmentULabel, ctxTemplateFunction } from './uLabel.js';
 import { cartesianProduct, arrayRange, arrayClone } from './utils.js';
@@ -23,7 +23,7 @@ function generateAbstraction(mg, params) {
     let targetAgentName = fparams.template;
     let arrArgsR = fparams.argsR;
     let setArgsR = new Set(fparams.argsR);
-
+    
     let dimArgsR = fparams.initVal.map(x => x?.length ?? 0);
     let iniArgsR = fparams.initVal.map(JSON.stringify).map(x => replaceBrackets(x)).reduce((acc, el, ind) => (acc[arrArgsR[ind]] = el, acc), {});
 
@@ -33,6 +33,12 @@ function generateAbstraction(mg, params) {
     let argsN = fparams.argsN;
 
     let hashPrefix = params.hash;
+
+    let domArgsR = arrArgsR.map(x => {
+        return mg.agents[targetAgentName].parser.varDecDom?.[x] || mg.parser.varDecDom?.[x]
+    });
+    
+    
 
     function getDomIdentifier(lid, v, hash = hashPrefix) {
         return `${hash}_d_at_${lid}_of_${v}`
@@ -73,14 +79,15 @@ function generateAbstraction(mg, params) {
     let scope = fparams.scope === '*' ? false : new Set(fparams.scope);
     let d = params.d;
 
-    let ldec = '';
+    let ldec = '\n';
     let ldec2 = '';
     for (const lid in d) {
         for (const v of arrArgsR) {
             let vi = argsRindexOf[v];
 
             ldec += `const int ${getDomIdentifier(lid, v)}[${d[lid].length}]`;
-            if (dimArgsR[vi]) ldec += `[${dimArgsR[vi]}]`
+            // if (dimArgsR[vi]) ldec += `[${dimArgsR[vi]}]`
+            if (domArgsR[vi].dim) ldec += `${domArgsR[vi].dim}`
             ldec += ` = ${replaceBrackets(JSON.stringify(d[lid].map(x => x[vi])))};\n`
 
             ldec2 += assumeFunctionDeclaration(lid, v);
@@ -90,7 +97,8 @@ function generateAbstraction(mg, params) {
     for (const v of arrArgsR) {
         let vi = argsRindexOf[v];
         ldec += `const int ${getInitIdentifier(v)}`
-        if (dimArgsR[vi]) ldec += `[${dimArgsR[vi]}]`
+        // if (dimArgsR[vi]) ldec += `[${dimArgsR[vi]}]`
+        if (domArgsR[vi].dim) ldec += `${domArgsR[vi].dim}`
         ldec += ` = ${iniArgsR[v]};\n`
     }
 

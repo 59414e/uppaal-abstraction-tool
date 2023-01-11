@@ -7,7 +7,7 @@ import * as util from "util";
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-import {WARN, INFO, DEBUG, SET_VERBOSE} from './simpleLogger.js';
+import {WARN, ERRR, DEBUG, SET_VERBOSE} from './simpleLogger.js';
 import {MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates} from './Parser/multiAgentGraph.js';
 import { log } from 'console';
 import { generateAbstraction } from './Parser/generateAbstract.js';

@@ -2,12 +2,15 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>// Place global declarations here.
-const int N_V = 3;
+const int N_V = 2;
 const int N_C = 2;
 
 chan decl[N_V+1];
 chan coll[N_V+1];
 chan vote[N_V+1];
+
+//const int arr[4] = {1,2,4,5};
+//const int[0,9] arr2[2][2] = {{1,2},{4,5}};
 
 int[0,2] sh_dec; // 1 - inperson, 2 - by mail
 int[0,1] buff_mail[N_V+1]; // election package is delivered to mailbox

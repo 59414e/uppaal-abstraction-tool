@@ -77,7 +77,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // custom libs/files
-import CONFIG from './config.js';
+import CONFIG from './tempConfig.js';
 import { renamingPreproc, generateProduct, substituteConst } from './ModelGenerator/gen_product.js';
 import { approximateLocalDomain, restictionOfLocalDomain } from './ModelGenerator/approx_ld.js';
 import { generateAbstractModel } from './ModelGenerator/gen_abstract.js';

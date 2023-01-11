@@ -1,0 +1,6 @@
+{
+    "input": "./sample_input/model.xml",
+    "output": "./output_files/out.xml",
+    "verbose": 2,
+    "unfold": 1
+}

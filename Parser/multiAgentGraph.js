@@ -3,7 +3,7 @@ import antlr4 from 'antlr4';
 import yagLexer from './YetAnotherGrammar/yagLexer.js';
 import yagListener from "./YetAnotherGrammar/yagListener.js";
 import yagParser from './YetAnotherGrammar/yagParser.js';
-import { DEBUG, INFO, WARN } from '../simpleLogger.js';
+import { DEBUG, ERRR, WARN } from '../simpleLogger.js';
 import { INT16_MIN, INT16_MAX, MASParser, parseTreeWalk, ctxTemplateWithCallback, assignParseTree, cleanUpStr } from './masParser.js';
 import { ULABEL_KINDS, SelectULabel, GuardULabel, SynchronisationULabel, AssignmentULabel, ctxTemplateFunction} from './uLabel.js';
 import { cartesianProduct, arrayRange, arrayClone } from './utils.js';
@@ -85,11 +85,18 @@ class MASGraph {
 	constructor(){
 		this.global = ''
 		this.agents = {};
+		this._consumedConst = false;
 	}
 
-	setGlobal(_global){
+	setGlobalDeclarations(_global){
 		this.global = _global;
-		assignParseTree.call(this, this.global, 'translation')
+		assignParseTree.call(this, this.global, 'translation');
+	}
+
+	setLocalDeclarations(_local, agentName){
+		let agent = this.agents[agentName];
+		agent.local = _local ?? '';
+		assignParseTree.call(agent, agent.local, 'translation');
 	}
 
 	fromString(str) {
@@ -99,7 +106,7 @@ class MASGraph {
 		
 		xmlParser.parseString(str, function (err, res) {
 			// global declarations
-			this.setGlobal(res.nta.declaration[0] ?? '')
+			this.setGlobalDeclarations(res.nta.declaration[0] ?? '')
 			// this.global = res.nta.declaration[0] ?? '';
 			// assignParseTree.call(this, this.global, 'translation')
 
@@ -177,12 +184,14 @@ class MASGraph {
 	unfoldSelectEdges(updateEdgesTo = true){
 		for(const a in this.agents){
 			let t = this.agents[a];
+					
+			DEBUG(`${a} had ${t.edges.length} edges`);
 			t.edges = t.edges.flatMap(e=>{
 				if(e.select?.content){
 					let res = [];
 					let choices = e.select.computeChoiceSpace();
-					// DEBUG(`${Object.keys(e.select.pairs).join(',')} hav following choices:`);
-					// DEBUG(choices);
+					DEBUG(`${Object.keys(e.select.pairs).join(',')} has following choices:`);
+					DEBUG(choices);
 					for(let ch of choices){
 						let ctxContext = Object.keys(e.select.pairs).reduce((acc,val,ind)=>(acc[val]=ch[ind],acc),{});
 						
@@ -201,6 +210,85 @@ class MASGraph {
 					return e;
 				}
 			})
+			DEBUG(`${a} has ${t.edges.length} edges`);
+			
+		}
+		if(updateEdgesTo)this.updateEdgesToForAll();
+	}
+
+	unfoldGuardEdges(updateEdgesTo = true){
+		// disjunction terms
+		for(const a in this.agents){
+			let t = this.agents[a];
+			t.edges = t.edges.flatMap(e=>{
+				if(e.guard?.content){
+					let res = [];
+					let disjunctiveTerms = e.guard.content.split('||');
+					console.log(disjunctiveTerms)
+					for(let conj of disjunctiveTerms){
+						res.push({
+							src: e.src,
+							trg: e.trg,
+							select: new SelectULabel(e.select?.content ?? ''),
+							guard: new GuardULabel(conj),
+							assignment: e["assignment"].content ? new AssignmentULabel(e["assignment"].content) : new AssignmentULabel(''),
+							synchronisation: e["synchronisation"].content ? new SynchronisationULabel(e["synchronisation"].content) : new SynchronisationULabel(''),
+							vars: new Set()
+						});
+					}
+					return res;
+				}else{
+					return e;
+				}
+			})
+		}
+		if(updateEdgesTo)this.updateEdgesToForAll();
+	}
+	
+
+	unfoldTparamEdges(updateEdgesTo = true){
+		// unfold the tparams (i.e., substitute their occurences with literals)
+		for(const a in this.agents){
+			let t = this.agents[a];
+
+			if(!t.tparam){
+				// DEBUG(`Agent ${a} has no tparams`);
+				continue;
+			}
+
+			let tparamNames = Object.keys(t.tparam);
+
+			for(const tparamName of tparamNames){
+				t.edges = t.edges.flatMap(e=>{
+					if(
+						e.guard.vars.has(tparamName) ||
+						e.assignment.vars.has(tparamName) ||
+						e.synchronisation.vars.has(tparamName)
+					){
+						let res = [];
+						let taparamValues = arrayRange(Number(t.tparam[tparamName][0]), Number(t.tparam[tparamName][1]))
+						
+						for(let tparamVal of taparamValues){
+							let ctxContext = {
+								[tparamName]:tparamVal
+							}
+							// console.log(e["assignment"].content);
+							res.push({
+								src: e.src,
+								trg: e.trg,
+								select: new SelectULabel(e.select?.content ?? ''),
+								guard: e["guard"].content ? new GuardULabel(`${tparamName}==${tparamVal} && ${e["guard"].stringWithContext(ctxContext)}`) : new GuardULabel(`${tparamName}==${tparamVal}`),
+								assignment: e["assignment"].content ? new AssignmentULabel(e["assignment"].stringWithContext(ctxContext)) : new AssignmentULabel(''),
+								synchronisation: e["synchronisation"].content ? new SynchronisationULabel(e["synchronisation"].stringWithContext(ctxContext)) : new SynchronisationULabel(''),
+								vars: new Set()
+							});
+						}
+						return res;
+					}else{
+						return e;
+					}
+				})
+			}
 		}
 		if(updateEdgesTo)this.updateEdgesToForAll();
 	}
@@ -264,7 +352,7 @@ class MASGraph {
 								src: e.src,
 								trg: e.trg,
 								select: '',
-								guard: e["guard"].content ? new GuardULabel(`${tparamName}==${tparamVal} && (${e["guard"].stringWithContext(ctxContext)})`) : new GuardULabel(`${tparamName}==${tparamVal}`),
+								guard: e["guard"].content ? new GuardULabel(`${tparamName}==${tparamVal} && ${e["guard"].stringWithContext(ctxContext)}`) : new GuardULabel(`${tparamName}==${tparamVal}`),
 								assignment: e["assignment"].content ? new AssignmentULabel(e["assignment"].stringWithContext(ctxContext)) : new AssignmentULabel(''),
 								synchronisation: e["synchronisation"].content ? new SynchronisationULabel(e["synchronisation"].stringWithContext(ctxContext)) : new SynchronisationULabel(''),
 								vars: new Set()
@@ -280,6 +368,7 @@ class MASGraph {
 		this.updateEdgesToForAll();
 	}
 
+	// todo[6]: invoke on demand for .edgesTo (when not up-to-date)
 	updateEdgesToForAll(){
 		for(const a in this.agents){
 			this.updateEdgesToFor(a);
@@ -361,7 +450,7 @@ class MASGraph {
 			for(const n in agent.nodes){
 				str+=`
 		<location id="${n}"${agent.nodes[n].pos.x ? " x=\""+agent.nodes[n].pos.x+"\"" : ''}${agent.nodes[n].pos.y ? " y=\""+agent.nodes[n].pos.y+"\"" : ''}>
-		${agent.nodes[n].name}
+			<name>${agent.nodes[n].name}</name>
 		</location>`
 			}
 			str += `
@@ -409,10 +498,68 @@ class MASGraph {
 			console.groupEnd();
 		}
 	}
+
+
+	consumeConst(userDefined){
+		// can be consumed only once (even if new userDefined dict is provided)
+		if(this?._consumedConst)return;
+		
+		let constDict = this.parser.constDict;
+		
+		// hook for (possible) future use
+		if(typeof userDefined !== 'undefined'){
+			constDict = Object.assign({}, constDict, userDefined)
+		}
+
+		let updatedGlobal = substituteConsts(this.tree, constDict);
+		this.setGlobalDeclarations(updatedGlobal);
+
+		// merge local consts and make required (unshadowed) substitutions
+		for(const a in this.agents){
+			let t = this.agents[a]; // reference to template
+
+			// todo[6]: omit assigning `tconstDec` if model is free of local const declarations
+			// let tconstDict = Object.assign({}, constDict, t.parser.constDict);
+			
+			let tconstDict;
+			if(Object.entries(t.parser.constDict) === 0){
+				tconstDict = constDict;
+			}else{
+				tconstDict = Object.assign({}, constDict, t.parser.constDict);
+			}
+			t.local = substituteConsts(t.tree, tconstDict);
+			assignParseTree.call(t, t.local, 'translation');
+			
+			// substitute bounded int range in tparam (if any)
+			for(const k in t.tparam){
+				[0,1].forEach(ind => {
+					let x = t.tparam[k][ind];
+					if(isNaN(x) && tconstDict.hasOwnProperty(x)){
+						t.tparam[k][ind] = tconstDict[x];
+					}	
+				});
+			}
+
+			t.edges = t.edges.map(e=>edgeWithContext(e, tconstDict))
+		}
+
+		this._consumedConst = true;
+		this.updateEdgesToForAll();
+	}
 }
 
-function printEdge(e){
-	console.log(`${e.src} --[${e.select?.content ? e.select.content+' ' : ''} ${e.guard?.content || 'T'} : ${e?.synchronisation?.content ?? ''}${e.assignment?.content || '_'} ]-> ${e.trg}`)
+function printEdge(e, inline=true){
+	// let str = `${e.src} --[ ${e.select?.content ? e.select.content+' . ' : ''} ${e.guard?.content || 'T'} : ${e?.synchronisation?.content ?? ''}${e.assignment?.content || '_'} ]-> ${e.trg}`;
+	let str = `${e.src} --[` + 
+		'\x1b[33m' + `${e.select?.content ? e.select.content+'. ' : ''}` + 
+		'\x1b[32m' + `${e.guard?.content || 'T'}: ` + 
+		'\x1b[36m' + `${e?.synchronisation?.content ? (e.synchronisation.content + ' ') : ''}` +
+		'\x1b[34m' + `${e.assignment?.content || '_'}` +
+		'\x1b[0m'  + `]-> ${e.trg}`;
+	if(inline){
+		str = str.replace(/[\s]+/g, ' ');
+	}
+	console.log(str)
 }
 
 
@@ -650,11 +797,15 @@ function approximateLocalDomain(masGraph, params, approxType) {
 							k=Math.floor(k/l);
 						}
 	
-						if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){
+						if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){						
 							continue;
 						}
 						if(!edge.assignment.ignore){
 							edge.assignment.atomicEvalWithContext(edgeContext)
+							let tmpVec = targetVars.map(v=>edgeContext[v]);
+							res[tmpVec.join(',')] = tmpVec;
+						}else{
+							// [changed on 10.01] - propagate the result from the guard
 							let tmpVec = targetVars.map(v=>edgeContext[v]);
 							res[tmpVec.join(',')] = tmpVec;
 						}
@@ -700,6 +851,7 @@ function unfoldTemplates(mg){
 
 	let constDict = mg.parser.constDict;
 	let sharedVars = Object.keys(mg.parser._varDeclarations).reduce((acc,x)=>(acc[x]=1,acc),{});
+	// let sharedVars = new Set(Object.keys(this.parser._varDeclarations));
 
 	let global = substituteConsts(mg.tree, constDict);
 
@@ -710,6 +862,8 @@ function unfoldTemplates(mg){
 
 		let tconstDict = Object.assign({}, constDict, t.parser.constDict);
 		t.local = substituteConsts(t.tree, tconstDict);
+		// todo[1]: check if substitution is desired
+		assignParseTree.call(t, t.local, 'translation')
 
 		if(!t.tparam){
 			agents[a] = t;
@@ -727,6 +881,7 @@ function unfoldTemplates(mg){
 			continue;
 		}
 
+		
 		let tparamNames = Object.keys(t.tparam);
 		let tparamRanges = tparamNames.map(p=>{
 			let left = constDict.hasOwnProperty(t.tparam[p][0]) ? constDict[t.tparam[p][0]]: t.tparam[p][0];
@@ -796,9 +951,10 @@ function unfoldTemplates(mg){
 		}
 	}
 
-	mg.setGlobal(global)
+	mg.setGlobalDeclarations(global)
 	mg.agents = agents;
 	mg.updateEdgesToForAll();
+	return mg;
 }
 
 
@@ -852,7 +1008,7 @@ function computeExtMAS(mg){
 				let xtrgChunks = [...chunks];
 				xtrgChunks[i] = trg;
 				let xtrg = xtrgChunks.join(',');
-				for(const e in currAgentGraph.nodes[currAgentChunk].edgesTo[trg]){
+				for(const e of currAgentGraph.nodes[currAgentChunk].edgesTo[trg]){
 					if(e.synchronisation?.content){
 						// todo[3]: introduce a filter to skip those
 						continue;
@@ -874,8 +1030,8 @@ function computeExtMAS(mg){
 					myq.push(xtrg);
 				}
 			}
+			
 		}
-
 		// process sync'd transitions
 		for(let i=0;i<numberOfAgents;i++){
 			let currAgentGraph = mg.agents[agentNames[i]];
@@ -930,7 +1086,10 @@ function computeExtMAS(mg){
 	// parse results into a MASGraph instance
 
 	let res = new MASGraph();
-	res.setGlobal(mg.global);
+	res.setGlobalDeclarations(mg.global);
+
+	
+
 	let obj = {
 		nodes: Object.keys(xlocationChunks).reduce((acc,el)=>(acc[el]={name:el, pos:{}},acc),{}),
 		edges: xedges,
@@ -941,6 +1100,7 @@ function computeExtMAS(mg){
 	res.agents = {
 		"ext": obj
 	}
+	
 	return res;
 }
 
@@ -962,6 +1122,17 @@ function edgeClone(e, callbackOnLabel){
 		"synchronisation": new SynchronisationULabel(callbackOnLabel(e.synchronisation) ?? ''),
 		"guard": new GuardULabel(callbackOnLabel(e.guard) ?? ''),
 		"assignment": new AssignmentULabel(callbackOnLabel(e.assignment) ?? '')
+	}
+}
+
+function edgeWithContext(e, paramContext){
+	return {
+		"src": e.src,
+		"trg": e.trg,
+		"select": new SelectULabel(e["select"]?.content ? e["select"].stringWithContext(paramContext) : ''),
+		"guard": new GuardULabel(e["guard"]?.content ? e["guard"].stringWithContext(paramContext) : ''),
+		"synchronisation": new SynchronisationULabel(e["synchronisation"]?.content ? e["synchronisation"].stringWithContext(paramContext) : ''),
+		"assignment": new AssignmentULabel(e["assignment"]?.content ? e["assignment"].stringWithContext(paramContext) : ''),
 	}
 }
 
@@ -1011,4 +1182,4 @@ function reachabilityMap(nodes, edges) {
 }
 
 export default MASGraph;
-export { MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates }
+export { MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates, UPPER_APPROX, LOWER_APPROX }
