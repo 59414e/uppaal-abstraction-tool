@@ -1,4 +1,4 @@
-let _VERBOSE_LEVEL = 2;
+let _VERBOSE_LEVEL = 0;
 
 function SET_VERBOSE(_level){
     _VERBOSE_LEVEL = _level;

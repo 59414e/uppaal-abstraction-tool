@@ -13,51 +13,42 @@ const UPPER_APPROX = 1;
 const LOWER_APPROX = 2;
 const UNIVERSE_PLACEHOLDER = `*`;
 
-// DomainApproximation is a mutable object, whose values are updated "in-place"
-// If immutable (and refined by assigning a reference to a value returned by an union/intersection) garbage collector would need to be considered
-
-// todo: consider using maps over objects
-// todo2: use obj/map instead of class
-class DomainApproximation {
-	constructor(_isEmptySet) {
-		this.vals = _isEmptySet ? {} : UNIVERSE_PLACEHOLDER;
-	}
-
-	get size() {
-		return this.vals === UNIVERSE_PLACEHOLDER ? Infinity : Object.keys(this.vals).length;
-	}
-
-	// _vals - other localDomain or arr of valueVectors
-	cap(_vals) {
-		if (_vals === UNIVERSE_PLACEHOLDER) return;
-
-		if (Array.isArray(_vals)) {
-			_vals = _vals.reduce((acc, v) => (acc[v.join(',')] = v, acc), {})
-		}
-
-		if (this.vals === UNIVERSE_PLACEHOLDER) {
-			this.vals = _vals;
-		} else {
-			for (const key in this.vals) {
-				if (!_vals.hasOwnProperty(key)) {
-					delete this.vals[key];
-				}
-			}
+function mapUnion(trg, donor){
+	if(trg.has(UNIVERSE_PLACEHOLDER)){
+		DEBUG(`Unexpected union on the <wildcard> "*" took place.`)
+	}else{
+		if(Array.isArray(donor)){
+			donor.forEach(entry=>{
+				let key = entry.join(',');
+				if(!trg.has(key))trg.set(key, entry)
+			})
+		}else{
+			donor.forEach((val,key)=>{
+				if(!trg.has(key))trg.set(key, val)
+			})
 		}
 	}
+	return trg;
+}
 
-	cup(_vals) {
-		if (this.vals === UNIVERSE_PLACEHOLDER || _vals === UNIVERSE_PLACEHOLDER) {
-			DEBUG(`Unexpected union on the <wildcard> "*" took place.`)
-			this.vals = UNIVERSE_PLACEHOLDER;
-		} else {
-			if (Array.isArray(_vals)) {
-				_vals = _vals.reduce((acc, v) => (acc[v.join(',')] = v, acc), {})
-			}
-			for (const key in _vals) {
-				this.vals[key] = _vals[key];
-			}
+function mapIntersection(trg, donor){
+	if(trg.has(UNIVERSE_PLACEHOLDER)){
+		trg.delete(UNIVERSE_PLACEHOLDER)
+		return mapUnion(trg,donor)
+	}else if(donor === UNIVERSE_PLACEHOLDER || donor?.has(UNIVERSE_PLACEHOLDER)){
+		return trg;
+	}else{
+		if(Array.isArray(donor)){
+			let candidates = new Set(donor.map(entry=>entry.join(',')));
+			trg.forEach((val,key,map)=>{
+				if(!candidates.has(key))map.delete(key)
+			})
+		}else{
+			trg.forEach((val,key,map)=>{
+				if(!donor.has(key))map.delete(key)
+			})
 		}
+		return trg;
 	}
 }
 
@@ -686,22 +677,26 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(acc*varDomainView[el].length), 1)
 	})
 
-	const startEmpty = (approxType === UPPER_APPROX);
-	const approxOp = (approxType === UPPER_APPROX) ? 'cup' : 'cap';
+	
+	const approxOp = (approxType === UPPER_APPROX) ? mapUnion : mapIntersection;
 	
 	// maps <loc> with Object<string:vector>		
-	let localDomain = locNames.reduce(
+	let localDomain = 
+	approxType === UPPER_APPROX ? 
+	locNames.reduce(
 		(acc, el) => (
-			acc[el] = new DomainApproximation(startEmpty),
+			acc[el] = new Map(),
 			acc),
 		{}
-	);
+	) :
+	locNames.reduce(
+		(acc, el) => (
+			acc[el] = new Map(UNIVERSE_PLACEHOLDER),
+			acc),
+		{}
+	) ;
 
-	
-
-	localDomain[locIni].vals = {
-		[params.initVal.join(',')]:[...params.initVal]
-	}
+	localDomain[locIni].set(params.initVal.join(','), [...params.initVal])
 
 	let pi = locNames.reduce(
 		(acc, el) => (
@@ -754,7 +749,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 
 	DEBUG(`local domain`);
 	DEBUG(localDomain);
-	// return Object.entries(localDomain).map(x=>[x[0],Object.values(x[1].vals)]);
+	
+	
 	return Object.entries(localDomain);
 
 
@@ -767,13 +763,13 @@ function approximateLocalDomain(masGraph, params, approxType) {
 			DEBUG(`Processing an edge from ${src} to ${trg}`)
 			if (edge.ignore) {
 				DEBUG(`edge.ignore flag - propagating the src's approximation`)
-				localDomain[trg][approxOp](localDomain[src].vals);
+				approxOp(localDomain[trg], localDomain[src]);
 			}else{
 				// assuming unfolded edges
 				let prodSize = edge.paramSpaceSize;
 				let res = {};
-				for(const vecStr in localDomain[src].vals){
-					let currVec = localDomain[src].vals[vecStr];
+				
+				for(const currVec of localDomain[src].values()){
 					let ctxContext = {};
 
 					// fill vars from ld
@@ -812,9 +808,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 					}	
 				}
 
-
 				if(Object.keys(res).length!=0){
-					localDomain[trg][approxOp](res);
+					approxOp(localDomain[trg],Object.values(res));
 				}
 			}
 		})
@@ -1182,4 +1177,4 @@ function reachabilityMap(nodes, edges) {
 }
 
 export default MASGraph;
-export { MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates, UPPER_APPROX, LOWER_APPROX }
+export { MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates, UPPER_APPROX, LOWER_APPROX, mapUnion, mapIntersection }
