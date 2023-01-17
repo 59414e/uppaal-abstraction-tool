@@ -173,9 +173,6 @@ function handleInfo(mg){
 }
 
 function handleUnfold(mg){
-    // let inputStr = fs.readFileSync(argv["input"],'utf-8');
-    // let mg = new MASGraph();
-    // mg.fromString(inputStr)
     let code = typeof argv["code"]!=='undefined' ? Number(argv["code"]) : argv["unfold"];     
     mg.consumeConst();
                 
@@ -259,15 +256,8 @@ function handleApprox(mg){
         }
 
         // console.log(ld);
-
-        // let str = JSON.stringify(ld.map(x=>[x[0],[...x[1].entries()]]), null, 4)
-        // console.log(str);
-
         fs.writeFileSync(argv["dmap"], desc+ JSON.stringify(ld,null,4))
     }
-    // mg.consumeConst();
-    // approximateLocalDomain(mg, params, argv["params"])
-    // let sArr = argv["params"].split('.') ?? '';
 }
 
 function handleAbstract(mg){
@@ -288,22 +278,11 @@ function handleAbstract(mg){
         myd = fs.readFileSync(obj["dmap"],'utf-8');            
         myd = JSON.parse(myd.replace(/\/\*[^\*]*\*\//g, ''));
         console.log(myd);
-        
         // myd = myd.reduce((acc,x)=>(acc[x[0]]=new Map(x[1]),acc),{})
         obj.d = myd
     }
-
-
     
-
-    // myd = Object.entries(myd).reduce((acc,el)=>{
-    //     acc[el[0]] = {vals:{}};
-
-    //     el[1].forEach(x=>acc[el[0]].vals[x.join(',')]=x)
-    // },{})
-    
-    console.log(myd);
-
+    // console.log(myd);
     obj = Object.assign({
         scope: "*",
         argsN: [],
@@ -312,21 +291,8 @@ function handleAbstract(mg){
     },obj);
 
     // mg.consumeConst();
-    let res = generateAbstraction(mg, obj)
-    
-    // console.log(res);
-    
+    let res = generateAbstraction(mg, obj)    
     fs.writeFileSync(argv["output"], res)
-    
-    // let xml = generateAbstraction(mgOrig, {
-    //     template: "Authority",
-    //     scope: "*",
-    //     argsN: [],
-    //     argsR: ['pack_sent'],
-    //     "initVal": [[0,0,0,0]],
-    //     hash: '_',
-    //     d: myd
-    // })
 }
 
 function handleConfig(){
@@ -371,22 +337,6 @@ function readXmlString(input, success, error){
     }
 }
 
-
-function readIfExists(pathStr){
-    let inputModelPath = path.resolve(pathStr);
-
-    if(path.extname(pathStr)!=='.xml'){
-        console.warn(`Expected input model extension is .xml, but received ${path.extname(pathStr)}`)
-    }
-
-    try{
-        return fs.readFileSync(inputModelPath, "utf8")
-    }catch(e){
-        console.log(`${e.message}`);
-        return null;
-    }
-}
-
 function restrictionOfLocalDomain(ld, i, with_union=true, sep=','){
     let res = {};
     let mapOp = with_union ? mapUnion : mapIntersection;
@@ -401,215 +351,9 @@ function restrictionOfLocalDomain(ld, i, with_union=true, sep=','){
         }
     }
 
-    // for(const pair of ld){
-    //     let lid = pair[0].split(sep)[i];
-        
-    //     if(!res.hasOwnProperty(lid)){
-    //         res[lid] = pair[1]
-    //     }else{
-    //         res[lid][with_union ? 'cup' : 'cap'](pair[1].vals)
-    //     }
-    // }
-
     for(const lid in res){
-        // console.log(res[lid]);
-        // res[lid] = Object.values(res[lid].vals)
         res[lid] = [...res[lid].values()]
     }
     
     return res;
-}
-
-// TODO: exec each of those as fork/child process
-// let t = new AssignmentULabel("pack_sent[i]= x+y+22/2,foo(),bar(x,1), sh_vt = choice, temp = pack_sent[i] && pack_sent[j]")
-// console.log(t.stringWithContext());
-// console.log(t.vars);
-// console.log(t.atomicVars);
-
-
-
-
-// t = t.toList().map(x=>{
-//     return Object.keys(parseTreeWalk(x[2], 'expr').parser._varOccurences)
-// })
-
-
-
-
-// console.log(t.getParameters(new Set(['pack_sent'])));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// TODO: exec each of those as fork/child process
-// if(true){
-if(true){
-// let mg = new MASGraph(inputStr);
-let mg = new MASGraph('');
-mg.fromString(inputStr)
-// let s = substituteConsts(mg.tree, mg.parser.constDict)
-// console.log(s)
-unfoldTemplates(mg)
-// mg.unfoldAlternatives();
-
-
-
-// console.log(mg.global);
-
-// for(let i=0;i<mg.tree.getChildCount();i++){
-//     let curr = mg.tree.getChild(i);
-//     // if(Object.values(mg.parser._constDeclarations).map(x=>x.parentCtx).indexOf(curr)!==-1){
-//     if(curr?.type?.constant){
-//         console.log(`@CONST: ${curr.getText()}`)
-//     }else{
-//         console.log(curr.getText());
-//     }
-// }
-// console.log(mg.parser._constDeclarations['N_V'].getText())
-// mg2.printEdges()
-
-// console.log(mg.agents.Voter.edges[0].select.computeChoiceSpace());
-
-// for(const a in mg.agents){
-//     console.log(`Agent ${a}`);
-//     console.group();
-//     console.log(mg.agents[a].local);
-//     mg.agents[a].edges.forEach(e => {
-//        console.log(`${e.src} --[${e.select.content ? e.select.content+' ' : ''} ${e.guard.content || 'T'} : ${e.synchronisation.content}${e.assignment.content || '_'} ]-> ${e.trg}`)
-//     });
-//     console.groupEnd();
-// }
-
-// console.log('====================');
-
-
-// mg.unfoldSelectEdges()
-// mg.unfoldAlternatives()
-
-
-
-// mg.printEdges()
-// console.log("==================================");
-// mg.printEdges()
-
-
-console.log("==================================");
-let agentNames = Object.keys(mg.agents);
-mg = computeExtMAS(mg);
-mg.unfoldAlternatives();
-
-let s = mg.toXML();
-// fs.writeFileSync('./output_files/unfolded_model.xml',s)
-
-mg = new MASGraph('');
-mg.fromString(s)
-
-// console.log(Object.keys(mg.agents));
-// let context = {
-//     "sh_sg":1,
-//     "sh_vt":2,
-//     "tally_1":22,
-//     "tally_2":23,
-//     "tally_3":24,
-//     "dec_recv": [1,1,2],
-//     "pack_sent": [0,0,0]
-// }
-let ld = approximateLocalDomain(mg, {
-    "targetVars": ['pack_sent'], 
-    "initVal": [[0,0,0,0]],
-    // "targetTemplate": "Authority"
-}, 1)
-
-
-console.log({agentNames});
-
-
-// console.log(util.inspect(ld, false, null, true /* enable colors */))
-
-
-// console.log(restrictionOfLocalDomain(ld, 3));
-
-let myd = restrictionOfLocalDomain(ld, 3);
-// console.log(util.inspect(d, false, null, true /* enable colors */))
-
-
-let mgOrig = new MASGraph();
-mgOrig.fromString(inputStr);
-
-
-let xml = generateAbstraction(mgOrig, {
-    template: "Authority",
-    scope: "*",
-    argsN: [],
-    argsR: ['pack_sent'],
-    "initVal": [[0,0,0,0]],
-    hash: '_',
-    d: myd
-})
-fs.writeFileSync('./output_files/abstract_model.xml',xml)
-
-
-console.log("==================================");
-// mgOrig.printEdges();
-
-
-
-
-
-
-// mg.agents.Authority.edges[0].assignment.atomicEvalWithContext(context);
-// console.log(mg.agents.Authority.edges[5].guard.content);
-// console.log(mg.agents.Authority.edges[5].guard.vars);
-// console.log(context);
-
-// console.log(mg.agents.Voter.tparam);
-// console.log(mg.agents.Voter.edges);
-// console.log(mg.agents.Authority.edges[5].guard.evalWithContext(context));;
-// console.log(mg.parser.varDecDom);
-
-// console.log(mg.agents.Voter.edges[1].select);
-// console.log(mg.agents.Voter.edges[0].select.pairs['vt'].getTypedRuleContexts(yagParser.Bound_rangeContext));
-
-// console.log(mg.agents.Authority.parser._varDeclarations['pack_sent'].vid.getText());
-// console.log(mg.tree);
-// console.log(Object.keys(mg.agents.Authority.edges[1].assignment.parser._varOccurences));
-
-// console.log(mg.agents.Authority.edges[1].assignment.content);
-// console.log(mg.agents.Authority.edges[1].assignment.vars);
-// mg.agents.Authority.edges[1].assignment.atomic.forEach((x,i)=> {
-//     console.log(`atomic ${i} = ${x.getText()}`)
-// });
-// console.log(mg.agents.Authority.edges[1].select.content);
-// console.log(mg.agents.Authority.edges[1].select.vars);
-
-// console.log(mg.agents.Authority.edges[0].synchronisation.content);
-// console.log(mg.agents.Authority.edges[0].synchronisation.vars);
-// // console.log(mg.agents.Authority.edges[0].synchronisation);
-
-// console.log(Object.keys(mg.agents.Authority.edges[0].select.pairs));
-// console.log(Object.keys(mg.parser.constDict));
-// console.log(mg.parser._varOccurences);
-// console.log(mg.agents.Authority.edges[0].assignment.templateString);
-// console.log(mg.agents.Authority.edges[0].assignment.templateFunction.call({}));
-// console.log(mg.agents.Authority.edges[0].assignment.stringWithContext({
-//     'sh_sg':13,
-//     'sh_vt':'not_shared_vote'
-// }));
-
-// mg.reduceToMayTemplate('Authority')
-
-// console.log(mg)
-
-
 }

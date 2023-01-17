@@ -67,7 +67,6 @@ function generateTableString(arr, header,caption=""){
         }
     }
 
-    // let str = header.map((x,ind)=>x.padEnd(columnPad[ind]+1, ' ')).join('\t');
     let str = "";
     if(caption)str+=`${'='.repeat(Math.max(columnPad.reduce((acc,x)=>(acc+x),0),caption.length))}\n`+"\x1b[1m"+caption+"\x1b[m"+`\n${'='.repeat(Math.max(columnPad.reduce((acc,x)=>(acc+x),0),caption.length))}\n`;
 
@@ -78,7 +77,6 @@ function generateTableString(arr, header,caption=""){
         
         let row = [];
         for(j=0;j<m;j++){
-            // str += arr[i][j].padEnd(columnPad[j]+1, ' ')+'\t';
             row.push(arr[i][j].padEnd(columnPad[j], ' '))
         }
         
