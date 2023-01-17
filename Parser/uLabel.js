@@ -97,6 +97,9 @@ class AssignmentULabel extends ULabel {
     }
 
     extendProperties(){
+        Object.defineProperty(this, "atomicVars", {
+            value: []
+        })
         if (this.content.length > 0) {
 			assignParseTree.call(this, this.content, AssignmentULabel.ruleName);
 			this.templateFunction = ctxTemplateFunction(this.tree);
@@ -104,9 +107,7 @@ class AssignmentULabel extends ULabel {
             let n = this.tree.getChildCount();
             
             this.atomic = [];
-            Object.defineProperty(this, "atomicVars", {
-                value: []
-            })
+            
             // this.atomicVars = [];
             for(let i=0;i<n;i++){
                 let ctx = this.tree.getChild(i);
@@ -119,7 +120,10 @@ class AssignmentULabel extends ULabel {
                         ctx.lhs?.dim ? ctxTemplateEval(ctx.lhs.dim) : '',
                         ctxTemplateEval(ctx.rhs),
                     ])
-                    this.atomicVars.push(Object.keys(parseTreeWalk(ctx.getText() ?? '', 'assignment_stmt').parser._varOccurences) ?? [])
+                    let temp = ctx.lhs?.vid.getText() ?? '';
+                    // this.atomicVars.push(Object.keys(parseTreeWalk(ctx.getText() ?? '', 'assignment_stmt').parser._varOccurences) ?? []) // all variables from stmt
+                    this.atomicVars.push(Object.keys(parseTreeWalk(ctx.getText() ?? '', 'assignment_stmt').parser._varOccurences).filter(x=>x!=temp) ?? []) // all variables from stmt except vid from LHS
+                    // this.atomicVars.push(Object.keys(parseTreeWalk(ctx.rhs.getText() ?? '', 'expr').parser._varOccurences) ?? []) // only variables from RHS
                 }else if(ctx?.ruleIndex === yagParser.RULE_fcall){
                     // DEBUG(`fcall = ${ctx.getText()}`)
                     this.atomic.push([
@@ -256,6 +260,9 @@ class GuardULabel extends ULabel {
 
     // todo: add ctxContext param
     shortCircuit(){
+        if(!this.extended){
+            this.extendProperties();
+        }
         // todo: add tautology evaluation (e.g., A || !A, A && !A)
         let n = this.tree.getChildCount();
         let res = false; // neutral element for disj

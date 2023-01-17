@@ -38,7 +38,8 @@ function cartesianProduct(...arr) {
     );
 }
 
-function printTable(arr, header=[]){
+
+function generateTableString(arr, header,caption=""){
     let i,j;
     let n=arr.length;
     let m = arr?.[0].length;
@@ -46,7 +47,7 @@ function printTable(arr, header=[]){
     let columnPad = new Array(m).fill(0)
 
     if(header.length!==0 && header.length!==m){
-        console.error("#printTable: inconsistent header length")
+        console.error("#generateTableString: inconsistent header length")
         return null;
     }
 
@@ -55,7 +56,7 @@ function printTable(arr, header=[]){
 
     for(i=0;i<n;i++){
         if(arr[i]?.length!==m){
-            console.error("#printTable: inconsistent number of columns among the rows of arr")
+            console.error("#generateTableString: inconsistent number of columns among the rows of arr")
             return null;
         }
         for(j=0;j<m;j++){
@@ -67,7 +68,10 @@ function printTable(arr, header=[]){
     }
 
     // let str = header.map((x,ind)=>x.padEnd(columnPad[ind]+1, ' ')).join('\t');
-    let str = header.map((x,ind)=>x.padEnd(columnPad[ind], ' ')).join(' | ');
+    let str = "";
+    if(caption)str+=`${'='.repeat(Math.max(columnPad.reduce((acc,x)=>(acc+x),0),caption.length))}\n`+"\x1b[1m"+caption+"\x1b[m"+`\n${'='.repeat(Math.max(columnPad.reduce((acc,x)=>(acc+x),0),caption.length))}\n`;
+
+    str += header.map((x,ind)=>x.padEnd(columnPad[ind], ' ')).join(' | ');
     str += '\n' + columnPad.map(x=>'-'.repeat(x+1)).join('+-')
     for(i=0;i<n;i++){
         str+='\n'
@@ -80,8 +84,14 @@ function printTable(arr, header=[]){
         
         str += row.join(' | ')
     }
+    return str;
+}
 
-    console.log(str);
+function printTable(arr, header=[], caption=""){
+    let str = generateTableString(arr, header, caption);
+    if(str!==null){        
+        console.log(str);
+    }
 }
 
 

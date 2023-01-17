@@ -181,7 +181,13 @@ function generateAbstraction(mg, params) {
 
         let argsRGuard = [...e.guard?.vars].filter(x => setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
         // let argsRAssign = [...e.assignment?.vars].filter(x=>setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
-        let argsRAssign = [...new Set(e.assignment.atomicVars.flat(Infinity))].filter(x => setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
+        // let argsRAssign = [...new Set(e.assignment.atomicVars.flat(Infinity))].filter(x => setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
+        // if(!e.extended)e.assignment.extendProperties();
+        
+        let argsRAssign = [];
+        if(e.assignment?.atomic){
+            argsRAssign = [...new Set(e.assignment.atomic?.filter(x=>x[0]==="stmt").map(x=>x[2]))].filter(x => setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
+        } 
         let paramsAssign = [...new Set(e.assignment.atomicVars.flat(Infinity))].filter(x => !setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
         let argsRSync = [...e.synchronisation?.vars].filter(x => setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
 
@@ -203,6 +209,8 @@ function generateAbstraction(mg, params) {
         // let combCode = arrArgsR.map(x=> occuringArgsR.has(x) ? 1 : 0).join('_');
         // let currDomainVar = `d_at_${e.src}_comb${combCode}`;
         // 
+        // console.log(`edge ${e.assignment.content} has paramAssign=${paramsAssign?.join(',')}`);
+        
 
 
         let ctxContext = lidToCtxContext[e.src];
@@ -218,7 +226,7 @@ function generateAbstraction(mg, params) {
             }
         }
 
-        if (paramsAssign.length > 0) {
+        if (paramsAssign?.length > 0) {
             // argsR appear on the RHS of other var assignment (or within fargs)
             let acontent = [];
             if (innerEdge || leaveEdge) {
@@ -229,6 +237,8 @@ function generateAbstraction(mg, params) {
                     // reset
                 }
             }
+
+            // let assumeLength = acontent.length;
             acontent.push(e.assignment.content);
 
             if (innerEdge || enterEdge) {
@@ -239,10 +249,19 @@ function generateAbstraction(mg, params) {
                     acontent.push(`${resetFunctionCall(v)}`)
                 }
             }
+            // let resetLength = acontent.length-assumeLength-1;
+
+            // todo: add an after_abstract_edge_generate hook for callback
+            // if(params?.beautify ?? false){
+            //     removeRedundantAssignmentTerms(e, acontent, assumeLength, resetLength, enterEdge, innerEdge, leaveEdge);
+            // }
+            
             e.assignment = new AssignmentULabel(acontent.join(',\n'))
         } else if(argsRAssign.length > 0){
+            // console.log(`edge ${e.assignment.content} has argsRAssign=${argsRAssign?.join(',')}`);
             // argsR only appear on the LHS => remove those and only keep the assume for argsN
             let acontent = e.assignment.atomic.filter(x => {
+                // console.log(`${x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))} for ${x[1].getText()}`)
                 return x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))
             }).map(x=>x[1].getText()).join(',')
 
@@ -255,7 +274,6 @@ function generateAbstraction(mg, params) {
                 }
             }
             // console.log(`argsRAssign.size = ${argsRAssign.size}, content =${acontent}`);
-            
             e.assignment = new AssignmentULabel(acontent);
         }else{
             // console.log(argsRAssign);
@@ -264,14 +282,24 @@ function generateAbstraction(mg, params) {
         } 
 
         // if argsR occurs (unshadowed) in guard/sync label OR assign-param OR assign-LHS demanding update of argsN 
-        if (occuringArgsR.size > 0 || argsRAssign.size>0 && argsN?.length>0) {
-            // let currDomainLength = getCombToDomainLen(e.src, combCode);
-            let currDomainLength = d[e.src].length - 1;
+        if (occuringArgsR.size > 0 || argsRAssign.length>0 && argsN?.length>0) {
+            if(!(paramsAssign.length>0) && argsRAssign.length>0){
+                //
+            }else{
+                // console.log(`edge ${e.assignment.content} will be extended with select`);
+                // console.log(`${paramsAssign.length>0} and ${argsRAssign.length>0}`);
+                
+                // let currDomainLength = getCombToDomainLen(e.src, combCode);
+                let currDomainLength = d[e.src].length - 1;
 
-            let sarr = [e.select.content];
-            sarr.push(`${hashPrefix}:int[0,${currDomainLength}]`)
-            e.select = new SelectULabel(sarr.join(',\n'));
+                let sarr = [e.select.content];
+                sarr.push(`${hashPrefix}:int[0,${currDomainLength}]`)
+                e.select = new SelectULabel(sarr.join(',\n'));
+            }
+            
         }
+
+        
 
         return true;
     })
@@ -293,6 +321,34 @@ function generateAbstraction(mg, params) {
 
 function replaceBrackets(str) {
     return str.replace(/\[/gm, '\{').replace(/\]/gm, '\}');
+}
+
+
+
+// NOTE: soundness is guaranteed only for the models without function calls
+function removeRedundantAssignmentTerms(e, acontent, assumeLength, resetLength, enterEdge, innerEdge, leaveEdge){
+    let keepAssume = false;
+    let keepReset = false;
+    if(leaveEdge && !innerEdge){
+        keepAssume = true;
+    }
+    
+    if(enterEdge && !innerEdge){
+        keepReset = true;
+    }
+
+    // check if 
+
+    if(!keepAssume && keepReset){
+        acontent = acontent.slice(assumeLength);
+    }else if(keepAssume && !keepReset){
+        acontent = acontent.slice(0,assumeLength+resetLength-1)
+    }else if(!keepAssume && !keepReset){
+        
+    }else{ // keepAssume && keepReset
+        // no changes
+        return;
+    }
 }
 
 export default {};

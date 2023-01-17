@@ -1,6 +1,7 @@
 {
     "input": "./sample_input/model.xml",
     "output": "./output_files/out.xml",
-    "verbose": 2,
+    "dmap": "./output_files/d.txt",
+    "verbose": 0,
     "unfold": 1
 }

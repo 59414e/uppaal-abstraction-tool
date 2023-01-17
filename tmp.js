@@ -17,8 +17,9 @@ import yagParser from './Parser/YetAnotherGrammar/yagParser.js';
 
 // let str = "pack_sent[i]==1 && dec_recv[vi]!=1 || a==1 && !b || 1==x || d && e";
 // let str = "pack_sent[i]==1 && 2==3 || 1!=1 || !5" ;
-let str = "x==4 || x!=4" ;
-let {tree, parser} = parseTreeWalk(str, "dnf");
+let str = "1==0 || 2==3";
+// let str = "x==4 || x!=4" ;
+// let {tree, parser} = parseTreeWalk(str, "dnf");
 // let {tree, parser} = parseTreeWalk("a==1 && !b || c && d && e", "dnf");
 
 
@@ -28,10 +29,18 @@ let {tree, parser} = parseTreeWalk(str, "dnf");
 //     }
 // }
 
-let g = new GuardULabel(str);
-let res = g.shortCircuit()
+// let g = new GuardULabel(str);
+// let res = g.shortCircuit()
+// console.log(res);
 
-console.log(res);
+// let a = new AssignmentULabel("x=2,y=x+3,z=z+y,arr[z+x]=arr[y]/t")
+// let a = new AssignmentULabel("x=2,foo(),y=x+3,z=z+y,arr[z+x]=bar(arr[y],arr[y+1],n)/t")
+// a.extendProperties();
+// console.log(a.atomicVars)
+
+
+
+
 
 
 
