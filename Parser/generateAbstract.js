@@ -76,7 +76,7 @@ function generateAbstraction(mg, params) {
         return `${resetFunctionName(of, hash)}()`;
     }
 
-    let scope = fparams.scope === '*' ? false : new Set(fparams.scope);
+    let scope = fparams.scope === '*' ? false : new Set(fparams.scope.split(','));
     let d = params.d;
 
     let ldec = '\n';
