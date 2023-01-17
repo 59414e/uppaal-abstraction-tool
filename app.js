@@ -262,7 +262,6 @@ function handleApprox(mg){
 
 function handleAbstract(mg){
     console.log(argv["params"]);
-        
     let obj = argv["params"].map(x=>x.split('=')).reduce((acc,x)=>(acc[x[0]]=x[1], acc), {})
 
     if(obj["argsR"]){
@@ -277,12 +276,11 @@ function handleAbstract(mg){
     if(obj["dmap"]){
         myd = fs.readFileSync(obj["dmap"],'utf-8');            
         myd = JSON.parse(myd.replace(/\/\*[^\*]*\*\//g, ''));
-        console.log(myd);
+        // console.log(myd);
         // myd = myd.reduce((acc,x)=>(acc[x[0]]=new Map(x[1]),acc),{})
         obj.d = myd
     }
     
-    // console.log(myd);
     obj = Object.assign({
         scope: "*",
         argsN: [],

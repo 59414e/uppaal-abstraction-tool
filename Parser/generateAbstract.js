@@ -102,7 +102,7 @@ function generateAbstraction(mg, params) {
         ldec += ` = ${iniArgsR[v]};\n`
     }
 
-    ldec2 += arrArgsR.map(x => resetFunctionDeclaration(x));
+    ldec2 += arrArgsR.map(x => resetFunctionDeclaration(x)).join('\n');
 
     // console.log(ldec);
     // console.log(ldec2);
@@ -292,7 +292,7 @@ function generateAbstraction(mg, params) {
                 // let currDomainLength = getCombToDomainLen(e.src, combCode);
                 let currDomainLength = d[e.src].length - 1;
 
-                let sarr = [e.select.content];
+                let sarr = e.select.content ? [e.select.content] : [];
                 sarr.push(`${hashPrefix}:int[0,${currDomainLength}]`)
                 e.select = new SelectULabel(sarr.join(',\n'));
             }
