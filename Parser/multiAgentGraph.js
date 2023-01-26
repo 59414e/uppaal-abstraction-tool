@@ -243,7 +243,7 @@ class MASGraph {
 			let t = this.agents[a];
 
 			if(!t.tparam){
-				// DEBUG(`Agent ${a} has no tparams`);
+				DEBUG(`Agent ${a} has no tparams`);
 				continue;
 			}
 
@@ -513,10 +513,10 @@ class MASGraph {
 			// let tconstDict = Object.assign({}, constDict, t.parser.constDict);
 			
 			let tconstDict;
-			if(Object.entries(t.parser.constDict) === 0){
-				tconstDict = constDict;
-			}else{
+			if(t?.parser?.constDict && Object.entries(t.parser.constDict).length !== 0){
 				tconstDict = Object.assign({}, constDict, t.parser.constDict);
+			}else{
+				tconstDict = constDict;
 			}
 			t.local = substituteConsts(t.tree, tconstDict);
 			assignParseTree.call(t, t.local, 'translation');
@@ -614,19 +614,19 @@ function approximateLocalDomain(masGraph, params, approxType) {
 	}
 
 	// eval+merge the varDecDom	
-	for(const p in masGraph.parser.varDecDom){
+	for(const p in masGraph.parser?.varDecDom){
 		masGraph.parser.varDecDom[p].range = [eval(masGraph.parser.varDecDom[p].range[0]),eval(masGraph.parser.varDecDom[p].range[1])]
 		// masGraph.parser.varDecDom[p].dim = eval(masGraph.parser.varDecDom[p].dim);
 		masGraph.parser.varDecDom[p].dim = (''+masGraph.parser.varDecDom[p].dim).split(/[\]\[]+/).filter(x=>x).map(a=>eval(a)).reduce((acc,el)=>acc*Number(el), 1)
 	}
 
-	for(const p in targetAgent.parser.varDecDom){
+	for(const p in targetAgent.parser?.varDecDom){
 		targetAgent.parser.varDecDom[p].range = [eval(targetAgent.parser.varDecDom[p].range[0]),eval(targetAgent.parser.varDecDom[p].range[1])]
 		targetAgent.parser.varDecDom[p].dim = eval(targetAgent.parser.varDecDom[p].dim);
 	}
 
 	// targetAgent's local variables (except parameter) together with global ones
-	let varDomainView = Object.assign({}, masGraph.parser.varDecDom, targetAgent.parser.varDecDom)
+	let varDomainView = Object.assign({}, masGraph?.parser?.varDecDom, targetAgent?.parser?.varDecDom)
 	
 	// populate the varDomainView with values
 	for(const p in varDomainView){
@@ -642,7 +642,6 @@ function approximateLocalDomain(masGraph, params, approxType) {
 			varDomainView[v] = arrayRange(Number(targetAgent.tparam[v][0]), Number(targetAgent.tparam[v][1]));
 		}
 	}
-
 	// console.log(varDomainView);
 	// return;
 
@@ -784,6 +783,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 					// fill remaining vars
 					for(let i=0;i<prodSize;i++){
 						let edgeContext = Object.assign({}, ctxContext);
+						// let edgeContext = ctxContext;
 						
 						let k = i;
 						
@@ -792,6 +792,11 @@ function approximateLocalDomain(masGraph, params, approxType) {
 							edgeContext[v] = varDomainView[v][k%l];
 							k=Math.floor(k/l);
 						}
+						// console.log(edgeContext);
+
+
+
+
 	
 						if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){						
 							continue;
@@ -818,6 +823,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 
 
 function substituteConsts(tree, dict){
+	if(!tree)return '';
 	let str_arr = [];
 	let n = tree.getChildCount();
 	for(let i=0;i<n;i++){
@@ -855,7 +861,13 @@ function unfoldTemplates(mg){
 	for(const a in mg.agents){
 		let t = mg.agents[a];
 
-		let tconstDict = Object.assign({}, constDict, t.parser.constDict);
+		let tconstDict;
+		if(t?.parser?.constDict){
+			tconstDict = Object.assign({}, constDict, t.parser.constDict);
+		}else{
+			tconstDict = Object.assign({}, constDict);
+		}
+
 		t.local = substituteConsts(t.tree, tconstDict);
 		// todo[1]: check if substitution is desired
 		assignParseTree.call(t, t.local, 'translation')
@@ -1086,7 +1098,7 @@ function computeExtMAS(mg){
 	
 
 	let obj = {
-		nodes: Object.keys(xlocationChunks).reduce((acc,el)=>(acc[el]={name:el, pos:{}},acc),{}),
+		nodes: Object.keys(xlocationChunks).reduce((acc,el)=>(acc[el]={name:el.replace(/\,/g,'_'), pos:{}},acc),{}),
 		edges: xedges,
 		local: Object.keys(mg.agents).reduce((acc,a)=>(acc+=mg.agents[a].local), '')
 	}
