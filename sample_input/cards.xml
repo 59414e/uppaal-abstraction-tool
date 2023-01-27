@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+
+const int NR = 3; // total number of red cards
+const int NB = 3; // total number of black cards
+const int NH = 2; // number of cards received
+
+//=========================================
+
+chan play[NB+NR][NB+NR];
+
+// player A
+int[0,1] Ar[NR]; // has red_i card
+int[0,1] Ab[NB]; // has black_i card
+
+// player B
+int[0,1] Br[NR]; // has red_i card
+int[0,1] Bb[NB]; // has black_i card
+
+
+int[0,NR+NB] m[NH][2]; // memory of played cards (where r_i is encoded as BN+r_i)
+
+int[0,NH] r; // helper variable (round number)
+
+int Ascore(){
+  int i, res;
+  for(i=0;i&lt;r;i++){
+    if(m[i][0]&gt;m[i][1])res++;
+  }
+  return res;
+}
+
+int Bscore(){
+  int i, res;
+  for(i=0;i&lt;r;i++){
+    if(m[i][0]&lt;m[i][1])res++;
+  }
+  return res;
+}
+
+bool onlyRedA(){
+  int i, res;
+  for(i=0;i&lt;r;i++){
+    if(m[i][0]&lt;NB)return false;
+  }
+  return true;
+}
+
+bool onlyRedB(){
+  int i, res;
+  for(i=0;i&lt;r;i++){
+    if(m[i][1]&lt;NB)return false;
+  }
+  return true;
+}</declaration>
+	<template>
+		<name x="5" y="5">A</name>
+		<declaration>// Place local declarations here.
+
+int[0,NH] hand;</declaration>
+		<location id="id0" x="34" y="0">
+		</location>
+		<location id="id1" x="-102" y="0">
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="-136" y="76">i:int[0,NR-1]</label>
+			<label kind="guard" x="-136" y="93">hand&lt;NH
+&amp;&amp; Ar[i]!=1
+&amp;&amp; Br[i]!=1</label>
+			<label kind="assignment" x="-137" y="144">Ar[i]=1,
+hand=hand+1</label>
+			<nail x="-136" y="68"/>
+			<nail x="-68" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id1"/>
+			<label kind="select" x="-136" y="-170">i:int[0,NB-1]</label>
+			<label kind="guard" x="-136" y="-153">hand&lt;NH 
+&amp;&amp; Bb[i]!=1
+&amp;&amp; Ab[i]!=1</label>
+			<label kind="assignment" x="-136" y="-102">Ab[i]=1,
+hand=hand+1</label>
+			<nail x="-68" y="-68"/>
+			<nail x="-136" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-76" y="-25">hand==NH</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="select" x="0" y="76">i:int[0,NR-1],
+j:int[0,NB-1+NR]</label>
+			<label kind="guard" x="0" y="110">Ab[i]==1 &amp;&amp; r&lt;NH</label>
+			<label kind="synchronisation" x="0" y="127">play[i+NB][j]!</label>
+			<label kind="assignment" x="0" y="144">m[r][0]=i+NB,
+Ar[i]=0</label>
+			<nail x="-8" y="68"/>
+			<nail x="76" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="select" x="-8" y="-170">i:int[0,NB-1],
+j:int[0,NB-1+NR]</label>
+			<label kind="guard" x="-8" y="-136">Ab[i]==1 &amp;&amp; r&lt;NH</label>
+			<label kind="synchronisation" x="-8" y="-119">play[i][j]!</label>
+			<label kind="assignment" x="-8" y="-102">m[r][0]=i,
+Ab[i]=0</label>
+			<nail x="76" y="-68"/>
+			<nail x="-9" y="-68"/>
+		</transition>
+	</template>
+	<template>
+		<name>B</name>
+		<declaration>// Place local declarations here.
+
+int[0,NH] hand;</declaration>
+		<location id="id2" x="0" y="0">
+		</location>
+		<location id="id3" x="-136" y="0">
+		</location>
+		<init ref="id3"/>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="select" x="-171" y="76">i:int[0,NR-1]</label>
+			<label kind="guard" x="-171" y="93">hand&lt;NH 
+&amp;&amp; Br[i]!=1
+&amp;&amp; Ar[i]!=1</label>
+			<label kind="assignment" x="-170" y="144">Br[i]=1,
+hand=hand+1</label>
+			<nail x="-170" y="68"/>
+			<nail x="-102" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="select" x="-171" y="-170">i:int[0,NB-1]</label>
+			<label kind="guard" x="-171" y="-153">hand&lt;NH 
+&amp;&amp; Bb[i]!=1
+&amp;&amp; Ab[i]!=1</label>
+			<label kind="assignment" x="-170" y="-102">Bb[i]=1,
+hand=hand+1</label>
+			<nail x="-102" y="-68"/>
+			<nail x="-170" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-110" y="-25">hand==NH</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id2"/>
+			<label kind="select" x="-42" y="76">i:int[0,NB-1+NR],
+j:int[0,NR-1]</label>
+			<label kind="guard" x="-42" y="110">Br[j]==1</label>
+			<label kind="synchronisation" x="-42" y="127">play[i][j+NB]?</label>
+			<label kind="assignment" x="-42" y="144">m[r][1]=j+NB,
+r=(r+1)%NH,
+Br[j]=0</label>
+			<nail x="-42" y="68"/>
+			<nail x="42" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id2"/>
+			<label kind="select" x="-42" y="-170">i:int[0,NB-1+NR],
+j:int[0,NB-1]</label>
+			<label kind="guard" x="-42" y="-136">Bb[j]==1</label>
+			<label kind="synchronisation" x="-42" y="-119">play[i][j]?</label>
+			<label kind="assignment" x="-42" y="-102">m[r][1]=j,
+r=(r+1)%NH,
+Bb[j]=0</label>
+			<nail x="42" y="-68"/>
+			<nail x="-42" y="-68"/>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+
+// List one or more processes to be composed into a system.
+system A,B;
+    </system>
+	<queries>
+		<query>
+			<formula>A[](r==NH &amp;&amp; onlyRedA() imply Ascore()&gt;Bscore()) &amp;&amp; (r==NH &amp;&amp; onlyRedB() imply Ascore()&lt;Bscore())</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[]1==1</formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>

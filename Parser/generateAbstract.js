@@ -30,7 +30,7 @@ function generateAbstraction(mg, params) {
     let argsRindexOf = arrArgsR.reduce((acc, el, i) => (acc[el] = i, acc), {});
 
     // let argsR = fparams.argsR.reduce((acc,el,ind)=>(acc[el]=ind, acc), {});
-    let argsN = fparams.argsN;
+    let argsN = fparams.argsN; // as an array of [fname, fevaluator, finitvalue]
 
     let hashPrefix = params.hash;
 
@@ -50,6 +50,18 @@ function generateAbstraction(mg, params) {
 
     function getDomIdentifierInst(lid, v, hash = hashPrefix) {
         return getDomIdentifier(lid, v, hash) + `[${hash}]`
+    }
+
+    function mergeFunctionDeclaration(fname, f, hash = hashPrefix){
+        return `${mergeFunctionName(fname, hash)}(){\n\t${fname}=${f};\m\n}\n`;
+    }
+    
+    function mergeFunctionName(of, hash=hashPrefix){
+        return `${hash}_merge_${of}`;
+    }
+
+    function mergeFunctionCall(fname, hash=hashPrefix){
+        return `${mergeFunctionName(fname,hash)}()`
     }
 
     function assumeFunctionDeclaration(at, of, hash = hashPrefix) {
@@ -79,8 +91,8 @@ function generateAbstraction(mg, params) {
     let scope = fparams.scope === '*' ? false : new Set(fparams.scope.split(','));
     let d = params.d;
 
-    let ldec = '\n';
-    let ldec2 = '';
+    let ldec = '\n'; // contains variable declarations
+    let ldec2 = '';  // contains function declarations
     for (const lid in d) {
         for (const v of arrArgsR) {
             let vi = argsRindexOf[v];
@@ -92,6 +104,10 @@ function generateAbstraction(mg, params) {
 
             ldec2 += assumeFunctionDeclaration(lid, v);
         }
+
+        for(const [fname,fval,finit] of argsN){
+            ldec2 += mergeFunctionDeclaration(fname,fval);
+        }
     }
 
     for (const v of arrArgsR) {
@@ -100,6 +116,10 @@ function generateAbstraction(mg, params) {
         // if (dimArgsR[vi]) ldec += `[${dimArgsR[vi]}]`
         if (domArgsR[vi].dim) ldec += `${domArgsR[vi].dim}`
         ldec += ` = ${iniArgsR[v]};\n`
+    }
+
+    for(const [fname,fval,finit] of argsN){
+        ldec +=`const int ${getInitIdentifier(fname)} = ${finit};\n`
     }
 
     ldec2 += arrArgsR.map(x => resetFunctionDeclaration(x)).join('\n');
@@ -233,8 +253,9 @@ function generateAbstraction(mg, params) {
                 for (const v of argsRAssign) {
                     acontent.push(`${assumeFunctionCall(e.src, v)}`)
                 }
-                for (const v in argsN) {
+                for (const v of argsN) {
                     // reset
+                    acontent.push(`${resetFunctionCall(v[0])}`)
                 }
             }
 
@@ -242,8 +263,9 @@ function generateAbstraction(mg, params) {
             acontent.push(e.assignment.content);
 
             if (innerEdge || enterEdge) {
-                for (const v in argsN) {
+                for (const v of argsN) {
                     // update
+                    acontent.push(`${mergeFunctionCall(v[0])}`)
                 }
                 for (const v of argsRAssign) {
                     acontent.push(`${resetFunctionCall(v)}`)
@@ -268,9 +290,12 @@ function generateAbstraction(mg, params) {
             if(argsN?.length){
                 if(innerEdge || leaveEdge){
                     // acontent = resetArgsN + acontent
+                    acontent = [argsN.map(x=>resetFunctionCall(x[0])).join(','),acontent].filter(x=>x).join(',');
                 }
                 if(innerEdge || enterEdge){
                     // acontent += updateArgsN
+                    if(acontent)acontent+=',';
+                    acontent += argsN.map(x=>mergeFunctionCall(x[0])).join(',');
                 }
             }
             // console.log(`argsRAssign.size = ${argsRAssign.size}, content =${acontent}`);

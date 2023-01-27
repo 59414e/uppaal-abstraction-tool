@@ -45,10 +45,10 @@ class SelectULabel extends ULabel {
 	}
 
 	computeChoiceSpace(){
-		let arr = [];
+		let arr = [];        
 		for(const key in this.pairs){
-			let max = Number(this.pairs[key].bound.bmax.getText());
-			let min = Number(this.pairs[key].bound.bmin.getText());
+			let max = eval(this.pairs[key].bound.bmax.getText());
+			let min = eval(this.pairs[key].bound.bmin.getText());
 			arr.push(
 				Array.from(
 					{length:max-min+1},

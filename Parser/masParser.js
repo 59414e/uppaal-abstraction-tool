@@ -237,6 +237,7 @@ class MASParser extends yagListener {
 }
 
 function parseTreeWalk(input, ruleName = 'translation') {
+	if(!input.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g,'').replace(/\s*/g,'').length>0)return {"tree":null, "parser":null};
 	const chars = new antlr4.InputStream(input);
 	const lexer = new yagLexer(chars);
 	const tokens = new antlr4.CommonTokenStream(lexer);

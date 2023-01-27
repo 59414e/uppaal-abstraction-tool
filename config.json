@@ -1,5 +1,5 @@
 {
-    "input": "./sample_input/model.xml",
+    "input": "./sample_input/cards.xml",
     "output": "./output_files/out.xml",
     "dmap": "./output_files/d.txt",
     "verbose": 2,
