@@ -213,7 +213,7 @@ function generateAbstraction(mg, params) {
 
 
 
-
+        //todo[1]: double-check
         let occuringArgsR = paramsAssign ?
             new Set([
                 ...argsRGuard,
@@ -305,10 +305,15 @@ function generateAbstraction(mg, params) {
             // console.log(paramsAssign);
             // console.log(e.assignment.content);
         } 
-
+        // console.log(occuringArgsR);
+        // console.log(occuringArgsR.size);
+        // console.log(paramsAssign.length>0);
+        // console.log(argsRAssign.length>0);
+        
+        
         // if argsR occurs (unshadowed) in guard/sync label OR assign-param OR assign-LHS demanding update of argsN 
         if (occuringArgsR.size > 0 || argsRAssign.length>0 && argsN?.length>0) {
-            if(!(paramsAssign.length>0) && argsRAssign.length>0){
+            if(!(occuringArgsR.size>0) && !(paramsAssign.length>0) && argsRAssign.length>0){
                 //
             }else{
                 // console.log(`edge ${e.assignment.content} will be extended with select`);

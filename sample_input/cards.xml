@@ -19,13 +19,12 @@ int[0,1] Ab[NB]; // has black_i card
 int[0,1] Br[NR]; // has red_i card
 int[0,1] Bb[NB]; // has black_i card
 
-
 int[0,NR+NB] m[NH][2]; // memory of played cards (where r_i is encoded as BN+r_i)
 
 int[0,NH] r; // helper variable (round number)
-
+/*
 int Ascore(){
-  int i, res;
+  int[0,NH] i, res;
   for(i=0;i&lt;r;i++){
     if(m[i][0]&gt;m[i][1])res++;
   }
@@ -33,7 +32,7 @@ int Ascore(){
 }
 
 int Bscore(){
-  int i, res;
+  int[0,NH] i, res;
   for(i=0;i&lt;r;i++){
     if(m[i][0]&lt;m[i][1])res++;
   }
@@ -41,7 +40,7 @@ int Bscore(){
 }
 
 bool onlyRedA(){
-  int i, res;
+  int[0,NH] i, res;
   for(i=0;i&lt;r;i++){
     if(m[i][0]&lt;NB)return false;
   }
@@ -49,12 +48,13 @@ bool onlyRedA(){
 }
 
 bool onlyRedB(){
-  int i, res;
+  int[0,NH] i, res;
   for(i=0;i&lt;r;i++){
     if(m[i][1]&lt;NB)return false;
   }
   return true;
-}</declaration>
+}
+*/</declaration>
 	<template>
 		<name x="5" y="5">A</name>
 		<declaration>// Place local declarations here.

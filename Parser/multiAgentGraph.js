@@ -1,4 +1,5 @@
 import * as xml2js from 'xml2js';
+import fs from 'fs';
 import antlr4 from 'antlr4';
 import yagLexer from './YetAnotherGrammar/yagLexer.js';
 import yagListener from "./YetAnotherGrammar/yagListener.js";
@@ -642,6 +643,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 			varDomainView[v] = arrayRange(Number(targetAgent.tparam[v][0]), Number(targetAgent.tparam[v][1]));
 		}
 	}
+
+	// fs.writeFileSync('./output_files/temp.txt', JSON.stringify(varDomainView, null, 4))
 	// console.log(varDomainView);
 	// return;
 
@@ -767,6 +770,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 				// assuming unfolded edges
 				let prodSize = edge.paramSpaceSize;
 				let res = {};
+				console.log(varDomainView['m']);
 				
 				for(const currVec of localDomain[src].values()){
 					let ctxContext = {};
@@ -790,6 +794,9 @@ function approximateLocalDomain(masGraph, params, approxType) {
 						for(const v of edge.vars){
 							let l = varDomainView[v].length;
 							edgeContext[v] = varDomainView[v][k%l];
+							if(Array.isArray(edgeContext[v])){
+								edgeContext[v] = arrayClone(edgeContext[v]);
+							}
 							k=Math.floor(k/l);
 						}
 						// console.log(edgeContext);
