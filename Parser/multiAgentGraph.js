@@ -976,7 +976,7 @@ function unfoldTemplates(mg){
 
 
 // for the extended edges that originate from a non-synched local transition there is no need to re-initialize the labels with their parsing (thus merely pointers will be used)
-function computeExtMAS(mg){
+function computeExtMAS(mg, keepLocationNames = true){
 	let agentNames = Object.keys(mg.agents);
 	let numberOfAgents = Object.keys(mg.agents).length;
 	let xlocationChunks = {}; // maps extended location {string} to its components {Array.<string>}
@@ -984,6 +984,11 @@ function computeExtMAS(mg){
 	let xinitChunks = agentNames.map(t=>mg.agents[t].init); // extended initial location
 	let xinit = xinitChunks.join(',')
 	let xedges = [];
+
+	let lidToName = Object.entries(mg.agents).map(([k,a])=>Object.keys(a.nodes).reduce((acc,lid)=>(acc[lid]=a.nodes[lid].name,acc),{}) )
+	// let lidToName = agentNames.map(Object.keys(mg.agents[a].nodes).reduce((acc,lid)=>(acc[lid]=mg.agents[a].nodes[lid].name),{}));
+	console.log(lidToName);
+	
 	
 	xlocationChunks[xinit] = xinitChunks;
 	let myq = [xinit];
@@ -1108,7 +1113,10 @@ function computeExtMAS(mg){
 	
 
 	let obj = {
-		nodes: Object.keys(xlocationChunks).reduce((acc,el)=>(acc[el]={name:el.replace(/\,/g,'_'), pos:{}},acc),{}),
+		nodes: Object.keys(xlocationChunks).reduce((acc,el)=>(acc[el]={
+			name: keepLocationNames ? el.split(',').map((x,i)=>lidToName[i][x]).join('_') :  el.replace(/\,/g,'_'), 
+			pos:{}
+		},acc),{}),
 		edges: xedges,
 		local: Object.keys(mg.agents).reduce((acc,a)=>(acc+=mg.agents[a].local), '')
 	}
