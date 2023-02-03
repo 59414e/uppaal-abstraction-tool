@@ -191,9 +191,6 @@ export default class yagLexer extends antlr4.Lexer {
     constructor(input) {
         super(input)
         this._interp = new antlr4.atn.LexerATNSimulator(this, atn, decisionsToDFA, new antlr4.PredictionContextCache());
-
-        	let constMap = {};
-
     }
 
     get atn() {

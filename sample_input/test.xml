@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+
+const int NA=3; // number of agents
+int[0,NA] impersonated; // impersonated agent
+
+
+
+chan share[NA+1][NA+1];
+
+int[0,3] shqual;
+</declaration>
+	<template>
+		<name x="5" y="5">AI</name>
+		<parameter>int[1,NA] id</parameter>
+		<declaration>// Place local declarations here.
+
+int data;</declaration>
+		<location id="id0" x="-442" y="-102">
+		</location>
+		<location id="id1" x="-306" y="-306">
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-450" y="-238">impersonated&gt;0 &amp;&amp;
+id!=impersonated</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-577" y="-238">(data&lt;2)==1</label>
+			<label kind="assignment" x="-578" y="-221">data=data+1</label>
+			<nail x="-578" y="-102"/>
+			<nail x="-510" y="-204"/>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+
+// List one or more processes to be composed into a system.
+
+system AI;
+</system>
+	<queries>
+		<query>
+			<formula>A[]forall(i:int[1,NA])(AI(i).mqual&lt;=2)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] exists(i:int[1,NA])(impersonated!=i &amp;&amp; AI(i).mqual&lt;2)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] !(forall(i:int[1,NA])(impersonated==i || AI(i).wait &amp;&amp; AI(i).mqual==2))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; (forall(i:int[1,NA])(impersonated==i || AI(i).wait &amp;&amp; AI(i).mqual==2))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ((forall(i:int[1,NA])(impersonated==i || AI(i).wait)) &amp;&amp; (exists(i:int[1,NA])(impersonated!=i &amp;&amp; AI(i).mqual==2)))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ((forall(i:int[1,NA])(impersonated==i || AI(i).wait)) &amp;&amp; (exists(i:int[1,NA])(impersonated!=i &amp;&amp; AI(i).mqual&lt;2)))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[]1==1</formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>

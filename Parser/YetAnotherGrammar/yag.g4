@@ -11,10 +11,6 @@ notes:
 
 grammar yag;
 
-@members{
-	let constMap = {};
-}
-
 file
 	: translation EOF
 	;
@@ -62,6 +58,8 @@ literal
 	| literal NOTEQUAL literal
 	| BANG literal
 	| '(' literal ')'
+	| literal (MUL | DIV | MOD) literal // test
+	| literal (ADD | SUB) literal	// test
 	// | (ID | INTEGER | BOOLEAN)
 	| var_identifier  arr_size?
 	| INTEGER | BOOLEAN

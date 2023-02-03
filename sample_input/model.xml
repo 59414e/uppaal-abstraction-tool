@@ -24,52 +24,53 @@ int[0,1] sh_sg; // signed form (honest+private casting)
 int[0,2] mem_dec;
 int[0,1] mem_sg;
 int[0,N_C] mem_vt;</declaration>
-		<location id="id0" x="64" y="-96">
+		<location id="id0" x="68" y="-272">
+			<name x="59" y="-255">has</name>
 		</location>
-		<location id="id1" x="256" y="-96">
-			<name x="246" y="-85">end</name>
+		<location id="id1" x="260" y="-272">
+			<name x="246" y="-255">end</name>
 		</location>
-		<location id="id2" x="-128" y="-96">
-			<name x="-152" y="-80">waits</name>
+		<location id="id2" x="-124" y="-272">
+			<name x="-148" y="-256">waits</name>
 		</location>
-		<location id="id3" x="-320" y="-96">
-			<name x="-336" y="-80">idle</name>
+		<location id="id3" x="-316" y="-272">
+			<name x="-332" y="-256">idle</name>
 		</location>
 		<init ref="id3"/>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="select" x="128" y="-312">vt:int[0,N_C],
+			<label kind="select" x="132" y="-488">vt:int[0,N_C],
 sg:int[0,1]</label>
-			<label kind="synchronisation" x="128" y="-280">vote[id]!</label>
-			<label kind="assignment" x="128" y="-264">sh_vt=vt,
+			<label kind="synchronisation" x="132" y="-456">vote[id]!</label>
+			<label kind="assignment" x="132" y="-440">sh_vt=vt,
 sh_sg=sg,
 mem_sg=sg,
 mem_vt=vt</label>
-			<nail x="160" y="-192"/>
+			<nail x="164" y="-368"/>
 		</transition>
 		<transition>
 			<source ref="id2"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-56" y="0">mem_dec==2 &amp;&amp; buff_mail[id]==1</label>
-			<label kind="assignment" x="-56" y="16">buff_mail[id]=0</label>
-			<nail x="-32" y="0"/>
+			<label kind="guard" x="-52" y="-176">mem_dec==2 &amp;&amp; buff_mail[id]==1</label>
+			<label kind="assignment" x="-52" y="-160">buff_mail[id]=0</label>
+			<nail x="-28" y="-176"/>
 		</transition>
 		<transition>
 			<source ref="id2"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-56" y="-232">mem_dec==1</label>
-			<label kind="synchronisation" x="-56" y="-216">coll[id]!</label>
-			<nail x="-32" y="-192"/>
+			<label kind="guard" x="-52" y="-408">mem_dec==1</label>
+			<label kind="synchronisation" x="-52" y="-392">coll[id]!</label>
+			<nail x="-28" y="-368"/>
 		</transition>
 		<transition>
 			<source ref="id3"/>
 			<target ref="id2"/>
-			<label kind="select" x="-256" y="-264">inperson:int[1,2]</label>
-			<label kind="synchronisation" x="-256" y="-248">decl[id]!</label>
-			<label kind="assignment" x="-256" y="-232">mem_dec=inperson,
+			<label kind="select" x="-252" y="-440">inperson:int[1,2]</label>
+			<label kind="synchronisation" x="-252" y="-424">decl[id]!</label>
+			<label kind="assignment" x="-252" y="-408">mem_dec=inperson,
 sh_dec=inperson</label>
-			<nail x="-224" y="-192"/>
+			<nail x="-220" y="-368"/>
 		</transition>
 	</template>
 	<template>

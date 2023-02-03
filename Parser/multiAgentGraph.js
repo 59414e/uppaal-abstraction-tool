@@ -523,12 +523,21 @@ class MASGraph {
 			assignParseTree.call(t, t.local, 'translation');
 			
 			// substitute bounded int range in tparam (if any)
-			for(const k in t.tparam){
+			for(const k in t.tparam){		
 				[0,1].forEach(ind => {
 					let x = t.tparam[k][ind];
-					if(isNaN(x) && tconstDict.hasOwnProperty(x)){
-						t.tparam[k][ind] = tconstDict[x];
-					}	
+					
+					// temporary fix
+					if(isNaN(x)){
+						Object.entries(tconstDict).forEach(([k,v])=>{
+							x = x.replace(k,v)
+						})
+					}
+					t.tparam[k][ind] = eval(x);
+
+					// if(isNaN(x) && tconstDict.hasOwnProperty(x)){
+					// 	t.tparam[k][ind] = tconstDict[x];
+					// }	
 				});
 			}
 
@@ -573,6 +582,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 	let agentNames = Object.keys(masGraph.agents);
 	let targetAgent = params.targetTemplate ? masGraph.agents[params.targetTemplate] : masGraph.agents[agentNames[0]];
 
+	// console.log(targetAgent);
+	
 
 	let loc = targetAgent.nodes; // <locID> to <location> dict
 	let locNames = Object.keys(loc);
@@ -674,8 +685,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		// we will only need those from guard and assignment
 		edge.vars = new Set([...edge.guard.vars, ...edge.assignment.vars].filter(v=>!targetVarIndexOf.hasOwnProperty(v)));
 		edge.ignore = ULABEL_KINDS.reduce((acc, kind) => acc && edge[kind].ignore, true)
-		// console.log(edge.vars);
-		// console.log(varDomainView);
+		console.log(edge.vars);
+		console.log(varDomainView);
 		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(acc*varDomainView[el].length), 1)
 	})
 
@@ -699,6 +710,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 	) ;
 
 	localDomain[locIni].set(params.initVal.join(','), [...params.initVal])
+	
 
 	let pi = locNames.reduce(
 		(acc, el) => (
@@ -770,7 +782,6 @@ function approximateLocalDomain(masGraph, params, approxType) {
 				// assuming unfolded edges
 				let prodSize = edge.paramSpaceSize;
 				let res = {};
-				console.log(varDomainView['m']);
 				
 				for(const currVec of localDomain[src].values()){
 					let ctxContext = {};
@@ -787,7 +798,6 @@ function approximateLocalDomain(masGraph, params, approxType) {
 					// fill remaining vars
 					for(let i=0;i<prodSize;i++){
 						let edgeContext = Object.assign({}, ctxContext);
-						// let edgeContext = ctxContext;
 						
 						let k = i;
 						
@@ -799,12 +809,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 							}
 							k=Math.floor(k/l);
 						}
-						// console.log(edgeContext);
-
-
-
-
-	
+						
+						
 						if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){						
 							continue;
 						}
@@ -878,7 +884,7 @@ function unfoldTemplates(mg){
 		t.local = substituteConsts(t.tree, tconstDict);
 		// todo[1]: check if substitution is desired
 		assignParseTree.call(t, t.local, 'translation')
-
+		
 		if(!t.tparam){
 			agents[a] = t;
 			t.edges = t.edges.map(e=>{
@@ -925,10 +931,7 @@ function unfoldTemplates(mg){
 			// dummy rename for local-scope variables
 			const paramContext = new Proxy(paramContext1, handler)
 			
-			// TOFIX: line below is for the testing only (should be removed after)
-			obj.local = tparamVal.reduce((acc,el,ind)=>(acc+=`int ${tparamNames[ind]} = ${el};\n`,acc), '');
-			// TOFIX: line above is for the testing only (should be removed after)
-			obj.local += substituteConsts(t.tree, paramContext);
+			obj.local = substituteConsts(t.tree, paramContext);
 			assignParseTree.call(obj, obj.local, 'translation')
 			
 			// obj.local = prependVarIds(obj.tree, instanceName+'_')

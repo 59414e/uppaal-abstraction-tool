@@ -111,9 +111,6 @@ public class yagLexer extends Lexer {
 	}
 
 
-		let constMap = {};
-
-
 	public yagLexer(CharStream input) {
 		super(input);
 		_interp = new LexerATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);

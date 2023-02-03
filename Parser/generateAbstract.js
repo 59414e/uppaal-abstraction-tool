@@ -90,7 +90,7 @@ function generateAbstraction(mg, params) {
 
     let scope = fparams.scope === '*' ? false : new Set(fparams.scope.split(','));
     let d = params.d;
-
+    
     let ldec = '\n'; // contains variable declarations
     let ldec2 = '';  // contains function declarations
     for (const lid in d) {
@@ -319,12 +319,14 @@ function generateAbstraction(mg, params) {
                 // console.log(`edge ${e.assignment.content} will be extended with select`);
                 // console.log(`${paramsAssign.length>0} and ${argsRAssign.length>0}`);
                 
-                // let currDomainLength = getCombToDomainLen(e.src, combCode);
-                let currDomainLength = d[e.src].length - 1;
+                if(!(e.assignment.content==='' && e.guard.content==='')){
+                    // let currDomainLength = getCombToDomainLen(e.src, combCode);
+                    let currDomainLength = d[e.src].length - 1;
 
-                let sarr = e.select.content ? [e.select.content] : [];
-                sarr.push(`${hashPrefix}:int[0,${currDomainLength}]`)
-                e.select = new SelectULabel(sarr.join(',\n'));
+                    let sarr = e.select.content ? [e.select.content] : [];
+                    sarr.push(`${hashPrefix}:int[0,${currDomainLength}]`)
+                    e.select = new SelectULabel(sarr.join(',\n'));
+                }
             }
             
         }

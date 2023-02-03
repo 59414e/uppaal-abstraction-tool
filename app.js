@@ -181,7 +181,7 @@ function handleUnfold(mg){
         mg = unfoldTemplates(mg)
         mg = computeExtMAS(mg)
     }else{
-        if(code>8){
+        if(code>=8){
             mg = unfoldTemplates(mg);
             code = code%8;
         }
@@ -227,7 +227,7 @@ function handleApprox(mg){
 
         mg.consumeConst();
 
-        if(obj["targetAgent"]){
+        if(obj["targetTemplate"]){
             //
         }else{
             mg = unfoldTemplates(mg)
@@ -238,7 +238,6 @@ function handleApprox(mg){
             }
             mg = computeExtMAS(mg);    
         }
-
                 
         mg.unfoldAlternatives();
 
@@ -261,7 +260,7 @@ function handleApprox(mg){
 }
 
 function handleAbstract(mg){
-    console.log(argv["params"]);
+    // console.log(argv["params"]);
     let obj = argv["params"].map(x=>x.split('=')).reduce((acc,x)=>(acc[x[0]]=x[1], acc), {})
 
     if(obj["argsR"]){

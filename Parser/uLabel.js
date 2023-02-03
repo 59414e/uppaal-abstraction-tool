@@ -240,6 +240,7 @@ class GuardULabel extends ULabel {
     }
 
     extendProperties(){
+        if(this.extended)DEBUG('re-extending the guard')
         Object.defineProperty(this, 'vars', {
             writable: true,
             enumerable: true,
@@ -355,7 +356,7 @@ function ctxTemplateFunction(ctx) {
 function ctxTemplateEval(ctx){
 	// let templateString = cleanUpStr(ctxTemplateEvalRec(ctx));
 	let templateString = cleanUpStr(ctxTemplateWithCallback(ctx, (x)=>`this["${x.getText()}"]`));
-	return new Function("return (" + templateString + ");");
+    return new Function("return (" + templateString + ");");
 }
 
 export default {};
