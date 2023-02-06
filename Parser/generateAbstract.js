@@ -20,7 +20,8 @@ function generateAbstraction(mg, params) {
     // for(const fparams of params.f)
     let fparams = params;
 
-    let targetAgentName = fparams.template;
+    // let targetAgentName = fparams.template;
+    let targetAgentName = fparams.targetemplate;
     let arrArgsR = fparams.argsR;
     let setArgsR = new Set(fparams.argsR);
     
