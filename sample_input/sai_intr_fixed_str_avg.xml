@@ -76,11 +76,11 @@ int[0,NA] rcv;</declaration>
 		<parameter>int[1,NA] id</parameter>
 		<declaration>// Place local declarations here.
 
-int data;
-int completion;
-int mstatus;
-int mqual;
-int info;</declaration>
+int[0,3] data;
+int[0,3] completion;
+int[0,3] mstatus;
+int[0,3] mqual;
+int[0,3] info;</declaration>
 		<location id="id4" x="-442" y="-102">
 		</location>
 		<location id="id5" x="-170" y="-102">
