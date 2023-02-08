@@ -53,7 +53,7 @@ const argv = yargs(hideBin(process.argv))
         handler:  (argv)=>{argv.command = COMMAND.CONFIG}
     })
     .command({
-        command: "unfold [code]",
+        command: "unfold <code>",
         desc: `Produce an extended MAS graph for code=0, or ungroup edges by {select-label, guard-alternative, tparam, instances} if code>0 and divisible by {1,2,4,8} resp.`,
         handler:  (argv)=>{argv.command = COMMAND.PREPROC}
     })
@@ -87,6 +87,10 @@ SET_VERBOSE(argv["verbose"] ?? 0);
     if(argv.command === COMMAND.CONFIG){
         handleConfig();
     }else{
+
+        // let x = JSON.parse(fs.readFileSync(CONFIG_PATH),'utf-8')
+        // console.log(x);
+        
         let mg = new MASGraph();
         readXmlString(argv.input, (str)=>mg.fromString(str), ()=>process.exit(0))
         if(argv.command === COMMAND.INFO){
@@ -270,7 +274,7 @@ function handleAbstract(mg){
     if(obj["initVal"]){
         obj["initVal"] = JSON.parse(`[${obj["initVal"]}]`);
     } 
-
+    
     let myd = {};
     if(obj["dmap"]){
         myd = fs.readFileSync(obj["dmap"],'utf-8');            

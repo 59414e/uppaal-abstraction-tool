@@ -21,7 +21,7 @@ function generateAbstraction(mg, params) {
     let fparams = params;
 
     // let targetAgentName = fparams.template;
-    let targetAgentName = fparams.targetemplate;
+    let targetAgentName = fparams.targetTemplate;
     let arrArgsR = fparams.argsR;
     let setArgsR = new Set(fparams.argsR);
     
@@ -35,6 +35,7 @@ function generateAbstraction(mg, params) {
 
     let hashPrefix = params.hash;
 
+    
     let domArgsR = arrArgsR.map(x => {
         return mg.agents[targetAgentName].parser.varDecDom?.[x] || mg.parser.varDecDom?.[x]
     });

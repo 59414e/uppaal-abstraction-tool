@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+const int N=3;
+const int M=3;
+
+int[0,1] occupied[N+M+1] = { 1,1,1, 0, 1,1,1 };</declaration>
+	<template>
+		<name x="5" y="5">Toad</name>
+		<parameter>int[0,N-1] id</parameter>
+		<declaration>int[0,N+M] pos;</declaration>
+		<location id="id0" x="-68" y="0">
+		</location>
+		<location id="id1" x="-170" y="0">
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="assignment" x="-152" y="0">pos=id</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-110" y="76">pos+2&lt;=N+M &amp;&amp;
+occupied[pos+1] &amp;&amp;
+!occupied[pos+2]</label>
+			<label kind="assignment" x="-110" y="127">occupied[pos]=0,
+pos=pos+2,
+occupied[pos]=1</label>
+			<nail x="-119" y="68"/>
+			<nail x="-17" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-119" y="-161">pos+1&lt;=N+M &amp;&amp;
+!occupied[pos+1]</label>
+			<label kind="assignment" x="-119" y="-127">occupied[pos]=0,
+pos=pos+1,
+occupied[pos]=1</label>
+			<nail x="-17" y="-68"/>
+			<nail x="-119" y="-68"/>
+		</transition>
+	</template>
+	<template>
+		<name>Frog</name>
+		<parameter>int[0,M-1] id</parameter>
+		<declaration>int[0,N+M] pos;</declaration>
+		<location id="id2" x="-68" y="0">
+		</location>
+		<location id="id3" x="102" y="0">
+		</location>
+		<init ref="id2"/>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="68" y="68">pos-2&gt;=0 &amp;&amp;
+occupied[pos-1] &amp;&amp;
+!occupied[pos-2]</label>
+			<label kind="assignment" x="68" y="119">occupied[pos]=0,
+pos=pos-2,
+occupied[pos]=1</label>
+			<nail x="59" y="59"/>
+			<nail x="144" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id3"/>
+			<label kind="guard" x="59" y="-153">pos-1&gt;=0 &amp;&amp;
+!occupied[pos-1]</label>
+			<label kind="assignment" x="59" y="-119">occupied[pos]=0,
+pos=pos-1,
+occupied[pos]=1</label>
+			<nail x="136" y="-68"/>
+			<nail x="59" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-42" y="0">pos = N+1+id</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+
+// List one or more processes to be composed into a system.
+system Toad, Frog;
+    </system>
+	<queries>
+		<query>
+			<formula>E&lt;&gt; forall(i:int[0,N-1])Toad(i).pos&gt;N</formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>
