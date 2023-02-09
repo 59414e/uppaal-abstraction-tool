@@ -495,7 +495,10 @@ class MASGraph {
 	consumeConst(userDefined){
 		// can be consumed only once (even if new userDefined dict is provided)
 		if(this?._consumedConst)return;
-		
+		if(this.parser === null){
+			this._consumedConst = true;
+			return;
+		}
 		let constDict = this.parser.constDict;
 		
 		// hook for (possible) future use
