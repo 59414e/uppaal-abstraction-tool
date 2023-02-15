@@ -338,7 +338,14 @@ function generateAbstraction(mg, params) {
         return true;
     })
 
+    // strip off the int bound for target vars
+    fparams.argsR.forEach((v,i) => {
+        const regIntBound = new RegExp(`int\\s*(\\[[^\\]]*\\])\\s*${v}[^;]*;`, 'gm')
+        agent.local = agent.local.replace(regIntBound, `int ${v} = ${fparams.initVal[i]};`);
+    });
+
     agent.local = agent.local + ldec + ldec2;
+
     // console.log(agent.tparam);    
     // console.log(mg.agents["Voter"].tparam);
     mg.updateEdgesToForAll()

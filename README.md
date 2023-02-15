@@ -18,56 +18,59 @@ dependencies:
 
 ```js
 /*
-1 - selects on edges
-2 - guards as alternatives
-4 - template parameters
-8 - unfold templates to instances
-0 - extended MAS graph (includes all)
-*/
-unfold: <0,1,2,3,4,5,6,7>
-
-/*
 0 - warnings
 1 - info
 2 - debug
 */
-verbose: <0,1,2>
+verbose: <VERBOSITY_LEVEL>
+
+
+input: <PATH_TO_CONCRETE_MODEL>
+output: <PATH_TO_ABSTRACT_MODEL>
+dmap: <PATH_TO_LOCAL_DOMAIN_APPROX>
 
 /*
-MappingFunction:
-- targetTemplate : string - name of the agent ('ext' by default)
-- scope: Array.<locationId:string> | '*' - scope of locations (asterisk for all)
-- argsR : Array.<string> - list of target variables (note their order)
-- initVal : Array.<Array*.number> - initial values for the target variables (ordered matching argsR)
-- argsN : Array.<{name:string, val:string, init:Array*.number}> - merge variable names, evaluation function and initial values
-- hash : string - unique prefix used for auxiliary variables (also used as a select identifier for index of assumed local domain element)
+CODE=0 for combined MAS graph or obtained as sum of selected parameters:
+1 - selects on edges
+2 - guards as alternatives
+4 - template parameters
+8 - unfold templates to instances
 */
-abstraction: Array.<MappingFunction>
+unfold: <CODE>
 
-
-/*
-Approximation:
-- type: <UPPER_APPROX:1 | LOWER_APPROX:2> - approximation type
-- template: string - name of the agent (or agents in order of appearance for ext MAS graph)
-- variables: Array.<string> - name of target variables (note their order)
-- values: Map.<locationId:string, values:Array.<Array*.number>> 
-*/
-approximation: <PATH_TO_APPROXIMATION>
-
-input: <PATH_TO_MODEL>
-
-/*
-<action>        -   <result>
-unfold          -   unfolded model 
-approximation   -   local domain approximation 
-abstraction     -   abstract model (may/must depending on approximation type) 
-*/
-output: <PATH_TO_OUTPUT>
+/* ... possible parameters for the commands ... */
 ```
+
+## Commands/functionalities
+
+`config <KEY>=<VAL>`  
+* stores the default value for a parameter with a given key
+* default values have lower priority than the explicit inline arguments from command calls
+
+`info <SELECTOR>`
+* allows to query the parser for (minimal) code analysis
+* selector values regex is `vars(.global | .const)? | <TemplateName>( .vars | .locations | .edges )?`
+* for technical reasons global variables and constants are treated separately
+
+`approx <TYPE> targetVars=<TARGET_VARS> initVal=<INIT_VALS> targetTemplate=<TARGET_TEMPLATE>`  
+* `1` and `2` for upper- and lower-aproximation types resp.
+* `TARGET_VARS` - an ordered list of comma-separated variable names
+* `INIT_VAL` - a list of comma-separated initial values (in order matching the variables)
+* `TARGET_TEMPLATE` - (optional) restrict approximation to a given template (usually produces a coarser result, but faster performance)
+
+
+`abstract targetVars=<TARGET_VARS> initVal=<INIT_VALS> targetTemplate=<TARGET_TEMPLATE> argsN=[<ID,EXPR,INIT>...] scope=<LOCATION_SCOPE>`  
+* `TARGET_VARS` - an ordered list of comma-separated variable names
+* `INIT_VAL` - a list of comma-separated initial values (in order matching the variables)
+* `TARGET_TEMPLATE` - target template of abstraction,
+* `<ID,EXPR,INIT>` - (optional) a merged variable name, evaluation expression and initial value
+* `LOCATION_SCOPE` - (optional) a comma-separated list of target template's location ids, to which the abstraction will be restricted
+
 
 ## Input model 
 
 * must be syntactically correct (input verification is not provided)
+* one declaration per one variable
 * guard expressions must be in DNF and may use only equality check `==` and `!=` against literal/const values (`x==y` can be translated into `x==c1 && y==c1 || ... || x==cn && y==ck`)
 * no function calls
 * no custom typedefs, structs 
@@ -75,6 +78,8 @@ output: <PATH_TO_OUTPUT>
 * no `+=`, `/=`, etc.
 * each variable should have an explicit initial value
 * target variables type must be written the same way as in the code (e.g., without calc in `1+1` or `x+1`)
+* variables `int` (possibly bounded) type only (`bool` is encoded as `int[0,1]`)
+* arrays should be flat (support for multi-dimensional arrays was added as experimental feature and will be further tested)
 
 Most of the above could be resolved/lifted by additional preprocessing (could be added in future), yet should not have impact on expressivity power (modulo simulation).
 

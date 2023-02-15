@@ -267,6 +267,10 @@ function handleAbstract(mg){
     // console.log(argv["params"]);
     let obj = argv["params"].map(x=>x.split('=')).reduce((acc,x)=>(acc[x[0]]=x[1], acc), {})
 
+    if(obj["targetVars"]){
+        obj["argsR"] = obj["targetVars"];
+    }
+
     if(obj["argsR"]){
         obj["argsR"]=obj["argsR"].split(',')
     }

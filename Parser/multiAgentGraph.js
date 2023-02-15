@@ -764,9 +764,18 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		}
 	}
 
-	DEBUG(`local domain`);
-	DEBUG(localDomain);
+	// DEBUG(`local domain`);
+	// DEBUG(localDomain);
 	
+	// temp fix - instead of "splitting" the location, select first good seed for submodel
+	if(approxType === LOWER_APPROX){
+		Object.entries(localDomain).map(pair=>{
+			if(pair[1].length){
+				pair[1]=pair[1][0];
+			}
+			return pair;
+		})
+	}
 	
 	return Object.entries(localDomain);
 
