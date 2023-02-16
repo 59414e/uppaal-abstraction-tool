@@ -3,7 +3,7 @@
 <nta>
 	<declaration>// Place global declarations here.
 const int NV = 2;
-const int NC = 2;
+const int NC = 3;
 
 chan decl[NV+1];
 chan coll[NV+1];
@@ -13,6 +13,16 @@ int[0,2] sh_dec;             // 1 - inperson, 2 - by mail
 int[0,1] buff_mail[NV+1];    // election package is delivered to mailbox
 int[0,NC] sh_vt;             // chosen candidate (or blank)
 int[0,1] sh_sg;              // voter's card was (un)signed
+
+
+int[0,2] dec_recv[NV];  // 1 - inperson, 2 - mailbox
+int[0,1] pack_sent[NV+1];
+int[0,NC] vt_recv[NV+1]; 
+int[0,1] sg_recv[NV+1]; 
+
+int[0,NV] tally_1;
+int[0,NV] tally_2;
+int[0,NV] tally_3;
 </declaration>
 	<template>
 		<name x="5" y="5">Voter</name>
@@ -72,22 +82,6 @@ sh_dec=dec</label>
 	</template>
 	<template>
 		<name>Authority</name>
-		<declaration>int[0,2] dec_recv[NV];  // 1 - inperson, 2 - mailbox
-int[0,1] pack_sent[NV+1];
-int[0,NC] vt_recv[NV+1]; 
-int[0,1] sg_recv[NV+1]; 
-
-int[0,NV] tally_1;
-int[0,NV] tally_2;
-int[0,NV] tally_3;
-
-int tallySum(){
-  return tally_1+tally_2+tally_3;
-}
-
-int packSum(){
-  return (sum(i:int[0,NV])pack_sent[i])
-}</declaration>
 		<location id="id4" x="288" y="0">
 			<name x="256" y="16">coll_vts</name>
 		</location>
@@ -152,13 +146,26 @@ sh_dec=0</label>
 			<nail x="-64" y="-64"/>
 		</transition>
 	</template>
-	<system>// Place template instantiations here.
+	<system>// Auxiliary functions
+int tallySum(){
+  return tally_1+tally_2+tally_3;
+}
 
+int packSum(){
+  int i;
+  return (sum(i:int[0,NV])pack_sent[i]);
+}
+
+// Place template instantiations here.
 // List one or more processes to be composed into a system.
-system Voter, Authority;</system>
+system Voter, Authority;
+
+</system>
 	<queries>
 		<query>
-			<formula>A[](Authority.tally_sum() &lt;= (sum(i:int[0,NV])Authority.pack_sent[i]) &amp;&amp; (sum(i:int[0,NV])Authority.pack_sent[i])&lt;=NV)</formula>
+			<formula>A[](
+  tallySum() &lt;= packSum() &amp;&amp; packSum() &lt;= NV
+)</formula>
 			<comment></comment>
 		</query>
 	</queries>

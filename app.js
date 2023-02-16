@@ -25,7 +25,6 @@ const COMMAND = {
 
 // Initialize yargs object
 const argv = yargs(hideBin(process.argv))
-    .count("verbose")
     .options({
         "input":{
             alias: 'i',
@@ -80,19 +79,23 @@ if(process.platform==="win32"){
     console.log("Warn: compatibility with windows was not fully tested.");
 }
 
-SET_VERBOSE(argv["verbose"] ?? 0);
+SET_VERBOSE(argv["v"] ?? 0);
+
 
 // Command handler IIFE
 (function(){
     if(argv.command === COMMAND.CONFIG){
         handleConfig();
     }else{
-
+        // console.log(argv);
+        // console.log(`verbosity level = ${argv["v"]}`);
+        // process.exit(1)
+        
         // let x = JSON.parse(fs.readFileSync(CONFIG_PATH),'utf-8')
         // console.log(x);
         
         let mg = new MASGraph();
-        readXmlString(argv.input, (str)=>mg.fromString(str), ()=>process.exit(0))
+        readXmlString(argv["i"], (str)=>mg.fromString(str), ()=>process.exit(0))
         if(argv.command === COMMAND.INFO){
             handleInfo(mg);
         }else if(argv.command === COMMAND.APPROX){
@@ -266,6 +269,7 @@ function handleApprox(mg){
 function handleAbstract(mg){
     // console.log(argv["params"]);
     let obj = argv["params"].map(x=>x.split('=')).reduce((acc,x)=>(acc[x[0]]=x[1], acc), {})
+    obj = Object.assign(argv, obj)
 
     if(obj["targetVars"]){
         obj["argsR"] = obj["targetVars"];

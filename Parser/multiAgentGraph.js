@@ -4,7 +4,7 @@ import antlr4 from 'antlr4';
 import yagLexer from './YetAnotherGrammar/yagLexer.js';
 import yagListener from "./YetAnotherGrammar/yagListener.js";
 import yagParser from './YetAnotherGrammar/yagParser.js';
-import { DEBUG, ERRR, WARN } from '../simpleLogger.js';
+import { DEBUG, ERRR, INFO, WARN } from '../simpleLogger.js';
 import { INT16_MIN, INT16_MAX, MASParser, parseTreeWalk, ctxTemplateWithCallback, assignParseTree, cleanUpStr } from './masParser.js';
 import { ULABEL_KINDS, SelectULabel, GuardULabel, SynchronisationULabel, AssignmentULabel, ctxTemplateFunction} from './uLabel.js';
 import { cartesianProduct, arrayRange, arrayClone } from './utils.js';
@@ -103,14 +103,14 @@ class MASGraph {
 			// assignParseTree.call(this, this.global, 'translation')
 
 			let agents = {};
-
+			this.system = res.nta.system;
 			res.nta.template.forEach(t => {
 				let tname = t.name[0]?._ ?? t.name[0];
 
 				// temp pointer to an agent graph/template
 				let obj = {};
 
-				obj.local = t.declaration[0] ?? '';
+				obj.local = t.declaration?.[0] ?? '';
 
 				assignParseTree.call(obj, obj.local, 'translation')
 				
@@ -466,9 +466,7 @@ class MASGraph {
 		}
 
 		str+=`
-	<system>
-		system ${Object.keys(this.agents).join(',')};
-    </system>
+	<system>${this.system}\n</system>
     <queries>
         <query>
             <formula></formula>
@@ -575,9 +573,12 @@ function printEdge(e, inline=true){
 // always operates on an agent graph (either G_ext(MG) or G_template)
 function approximateLocalDomain(masGraph, params, approxType) {
 	if (approxType !== UPPER_APPROX && approxType !== LOWER_APPROX) {
-		WARN(`Unrecognized approximation type ${approxType} was passed.`)
+		ERR(`Unrecognized approximation type ${approxType} was passed.`)
 		return -1;
 	}
+
+	DEBUG(`Running local domain approximation with following parameters:\n  type: ${approxType===UPPER_APPROX ? "UPPER_APPROX" : "LOWER_APPROX"}\n  targetVars: ${params.targetVars}\n  initVal: ${params.initVal}\n  targetTemplate: ${params.targetTemplate ? params.targetTemplate : "combined MAS"}`)
+
 	// todo: derive varType and varInit from varName
 	let targetVars = params.targetVars;
 	let targetVarIndexOf = targetVars.reduce((acc,el,ind)=>(acc[el]=ind, acc), {});	
@@ -688,8 +689,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		// we will only need those from guard and assignment
 		edge.vars = new Set([...edge.guard.vars, ...edge.assignment.vars].filter(v=>!targetVarIndexOf.hasOwnProperty(v)));
 		edge.ignore = ULABEL_KINDS.reduce((acc, kind) => acc && edge[kind].ignore, true)
-		console.log(edge.vars);
-		console.log(varDomainView);
+		// console.log(edge.vars);
+		// console.log(varDomainView);
 		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(acc*varDomainView[el].length), 1)
 	})
 
