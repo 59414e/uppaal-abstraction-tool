@@ -92,7 +92,7 @@ function generateAbstraction(mg, params) {
 
     let scope = fparams.scope === '*' ? false : new Set(fparams.scope.split(','));
     let d = params.d;
-    
+
     let ldec = '\n'; // contains variable declarations
     let ldec2 = '';  // contains function declarations
     for (const lid in d) {
@@ -181,24 +181,29 @@ function generateAbstraction(mg, params) {
             scope.has(e.src) &&
             scope.has(e.trg)
         );
-        const leaveEdge = (
-            !scope ||
+        const leaveEdge = scope ? (
             scope.has(e.src) &&
             !scope.has(e.trg)
-        );
-        const enterEdge = (
-            !scope ||
+        ) : false;
+        const enterEdge = scope ?(
             !scope.has(e.src) &&
             scope.has(e.trg)
-        );
+        ) : false;
 
         if (
             (innerEdge || enterEdge) && d[e.trg].length == 0 ||
             (innerEdge || leaveEdge) && d[e.src].length == 0
         ) {
-            DEBUG(`${t.src}->${t.trg} will be deleted (empty domain approx)`);
+            DEBUG(`${e.src}->${e.trg} will be deleted (empty domain approx)`);
             return false;
         }
+
+        if(!innerEdge && !enterEdge && !leaveEdge){
+            // out of scope - remains unchanged
+            return true;
+        }
+
+        
         if(!e.assignment.extended)e.assignment.extendProperties();
 
         let argsRGuard = [...e.guard?.vars].filter(x => setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
@@ -248,28 +253,66 @@ function generateAbstraction(mg, params) {
             }
         }
 
-        if (paramsAssign?.length > 0) {
+
+        
+        
+
+
+        if (true) {
             // argsR appear on the RHS of other var assignment (or within fargs)
             let acontent = [];
-            if (innerEdge || leaveEdge) {
-                for (const v of argsRAssign) {
-                    acontent.push(`${assumeFunctionCall(e.src, v)}`)
+            let ccontent = e.assignment.content;
+            // if (innerEdge || leaveEdge) {
+            if(innerEdge){
+                if (paramsAssign?.length > 0) {
+                    for (const v of argsRAssign) {
+                        acontent.push(`${assumeFunctionCall(e.src, v)}`)
+                    }
+                }else if(argsRAssign.length > 0){
+                    ccontent = e.assignment.atomic.filter(x => {
+                        // console.log(`${x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))} for ${x[1].getText()}`)
+                        return x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))
+                    }).map(x=>x[1].getText()).join(',')        
+                }else{
+
                 }
                 for (const v of argsN) {
-                    // reset
                     acontent.push(`${resetFunctionCall(v[0])}`)
                 }
             }
 
-            // let assumeLength = acontent.length;
-            acontent.push(e.assignment.content);
-
-            if (innerEdge || enterEdge) {
+            if (leaveEdge) {
+                for (const v of arrArgsR) {
+                    acontent.push(`${assumeFunctionCall(e.src, v)}`)
+                }
                 for (const v of argsN) {
-                    // update
+                    acontent.push(`${resetFunctionCall(v[0])}`)
+                }
+            }
+    
+            // let assumeLength = acontent.length;
+            acontent.push(ccontent);
+
+            
+            // if (innerEdge || enterEdge) {
+            if(innerEdge){
+                for (const v of argsN) {
                     acontent.push(`${mergeFunctionCall(v[0])}`)
                 }
-                for (const v of argsRAssign) {
+                if (paramsAssign?.length > 0) {
+                    for (const v of argsRAssign) {
+                        acontent.push(`${resetFunctionCall(v)}`)
+                    }
+                }else {
+                    //
+                }
+            }
+
+            if (enterEdge) {
+                for (const v of argsN) {
+                    acontent.push(`${mergeFunctionCall(v[0])}`)
+                }
+                for (const v of arrArgsR) {
                     acontent.push(`${resetFunctionCall(v)}`)
                 }
             }
@@ -280,48 +323,68 @@ function generateAbstraction(mg, params) {
             //     removeRedundantAssignmentTerms(e, acontent, assumeLength, resetLength, enterEdge, innerEdge, leaveEdge);
             // }
             
-            e.assignment = new AssignmentULabel(acontent.join(',\n'))
-        } else if(argsRAssign.length > 0){
-            // console.log(`edge ${e.assignment.content} has argsRAssign=${argsRAssign?.join(',')}`);
-            // argsR only appear on the LHS => remove those and only keep the assume for argsN
-            let acontent = e.assignment.atomic.filter(x => {
-                // console.log(`${x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))} for ${x[1].getText()}`)
-                return x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))
-            }).map(x=>x[1].getText()).join(',')
+            e.assignment = new AssignmentULabel(acontent.filter(x=>x).join(',\n'))
+        }
+        // else if(argsRAssign.length > 0){
+        //     // console.log(`edge ${e.assignment.content} has argsRAssign=${argsRAssign?.join(',')}`);
+        //     // argsR only appear on the LHS => remove those and only keep the assume for argsN
+        //     let acontent = e.assignment.atomic.filter(x => {
+        //         // console.log(`${x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))} for ${x[1].getText()}`)
+        //         return x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))
+        //     }).map(x=>x[1].getText()).join(',')
 
-            if(argsN?.length){
-                if(innerEdge || leaveEdge){
-                    // acontent = resetArgsN + acontent
-                    acontent = [argsN.map(x=>resetFunctionCall(x[0])).join(','),acontent].filter(x=>x).join(',');
-                }
-                if(innerEdge || enterEdge){
-                    // acontent += updateArgsN
-                    if(acontent)acontent+=',';
-                    acontent += argsN.map(x=>mergeFunctionCall(x[0])).join(',');
-                }
-            }
-            // console.log(`argsRAssign.size = ${argsRAssign.size}, content =${acontent}`);
-            e.assignment = new AssignmentULabel(acontent);
-        }else{
-            // console.log(argsRAssign);
-            // console.log(paramsAssign);
-            // console.log(e.assignment.content);
-        } 
+        //     if(argsN?.length){
+        //         if(innerEdge || leaveEdge){
+        //             // acontent = resetArgsN + acontent
+        //             acontent = [argsN.map(x=>resetFunctionCall(x[0])).join(','),acontent].filter(x=>x).join(',');
+        //         }
+        //         if(innerEdge || enterEdge){
+        //             // acontent += updateArgsN
+        //             if(acontent)acontent+=',';
+        //             acontent += argsN.map(x=>mergeFunctionCall(x[0])).join(',');
+        //         }
+        //     }
+        //     // console.log(`argsRAssign.size = ${argsRAssign.size}, content =${acontent}`);
+        //     e.assignment = new AssignmentULabel(acontent);
+        // }else{
+        //     // console.log(argsRAssign);
+        //     // console.log(paramsAssign);
+        //     // console.log(e.assignment.content);
+        // } 
         // console.log(occuringArgsR);
         // console.log(occuringArgsR.size);
         // console.log(paramsAssign.length>0);
         // console.log(argsRAssign.length>0);
         
+        // if(enterEdge){
+        //     console.log('@');
+        //     console.log(`${e.src}->${e.trg}`);
+        //     console.log({enterEdge, innerEdge, leaveEdge});
+        //     console.log('@');
+
+        //     let acontent  = [];
+        //     for (const v of arrArgsR) {
+        //         acontent.push(`${resetFunctionCall(v)}`)
+        //     }
+        //     e.assignment = new AssignmentULabel((e.assignment.content ? ',' : '') + acontent.join(',\n'));
+        // }
+
+        
+        // console.log({enterEdge, innerEdge, leaveEdge});
         
         // if argsR occurs (unshadowed) in guard/sync label OR assign-param OR assign-LHS demanding update of argsN 
         if (occuringArgsR.size > 0 || argsRAssign.length>0 && argsN?.length>0) {
-            if(!(occuringArgsR.size>0) && !(paramsAssign.length>0) && argsRAssign.length>0){
+            if(enterEdge){
+                // skip for the enter edges
+            }else if(!(occuringArgsR.size>0) && !(paramsAssign.length>0) && argsRAssign.length>0){
                 //
             }else{
-                // console.log(`edge ${e.assignment.content} will be extended with select`);
-                // console.log(`${paramsAssign.length>0} and ${argsRAssign.length>0}`);
+                DEBUG(`edge ${e.assignment.content} will be extended with select`);
+                DEBUG(`${paramsAssign.length>0} and ${argsRAssign.length>0}`);
                 
-                if(!(e.assignment.content==='' && e.guard.content==='')){
+                if(!(paramsAssign.length>0) && !(argsN?.length>0)){
+                    // console.log("@@");                    
+                } else if(!(e.assignment.content==='' && e.guard.content==='')){
                     // let currDomainLength = getCombToDomainLen(e.src, combCode);
                     let currDomainLength = d[e.src].length - 1;
 

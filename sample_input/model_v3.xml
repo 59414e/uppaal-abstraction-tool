@@ -2,7 +2,7 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>// Place global declarations here.
-const int NV = 2;
+const int NV = 5;
 const int NC = 3;
 
 chan decl[NV+1];
@@ -146,7 +146,7 @@ sh_dec=0</label>
 			<nail x="-64" y="-64"/>
 		</transition>
 	</template>
-	<system>// Auxiliary functions
+	<system>// Auxiliary
 int tallySum(){
   return tally_1+tally_2+tally_3;
 }
