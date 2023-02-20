@@ -55,6 +55,7 @@ literal
 	| literal (ADD | SUB) literal		// test
 	// | (ID | INTEGER | BOOLEAN)
 	| var_identifier  arr_size?
+	| '{' expr '}' arr_size
 	| INTEGER | BOOLEAN
 	;
 

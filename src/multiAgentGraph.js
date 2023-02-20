@@ -487,7 +487,6 @@ class MASGraph {
 			}
 			t.local = substituteConsts(t.tree, tconstDict);
 			assignParseTree.call(t, t.local, 'translation');
-			
 			// substitute bounded int range in tparam (if any)
 			for(const k in t.tparam){		
 				[0,1].forEach(ind => {
@@ -506,6 +505,10 @@ class MASGraph {
 					// }	
 				});
 			}
+
+			// for(const x in tconstDict){
+			// 	tconstDict[x] = tconstDict[x].replace(/\{/g,'[').replace(/\}/g,']')
+			// }
 
 			t.edges = t.edges.map(e=>edgeWithContext(e, tconstDict))
 		}

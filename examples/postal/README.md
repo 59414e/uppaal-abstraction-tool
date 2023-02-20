@@ -68,3 +68,33 @@ Note that the graph layout might get changed.
 verifyta -u examples/postal/abstract.xml examples/postal/postal.q
 ```
 
+(Optional) to avoid name collisions, we could also rename an abstraction model file.
+
+```sh
+mv examples/postal/abstract.xml examples/postal/abstract1.xml
+```
+
+### Abstraction 2
+
+In chain: removes Voter's memory on chosen delivery method when election package was collected and Authority's memory of how Voters declared they wish to get election package.
+
+
+Part a:
+
+```sh
+./app.js approx 1 targetVars=mem_dec initVal=0 targetTemplate=Voter
+./app.js -o ./examples/postal/temp.xml approx 1 targetVars=mem_dec initVal=0 targetTemplate=Voter scope=id0,id1
+```
+
+Part b:
+```sh
+./app.js -i ./examples/postal/temp.xml -v 2 approx 1 targetVars=dec_recv initVal="[0,0,0,0,0,0]" targetTemplate=Authority
+./app.js -i ./examples/postal/temp.xml abstract targetVars=dec_recv initVal="[0,0,0,0,0,0]" targetTemplate=Authority scope=id4
+```
+
+(Optional) rename and remove temp file:
+
+```sh
+mv examples/postal/abstract.xml examples/postal/abstract2.xml
+rm examples/postal/temp.xml
+```

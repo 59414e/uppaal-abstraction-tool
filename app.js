@@ -241,7 +241,7 @@ function handleApprox(mg){
         mg.unfoldAlternatives();
 
         let s = mg.toXML();
-        fs.writeFileSync(argv["output"], s)
+        // fs.writeFileSync(argv["output"], s)
         mg = new MASGraph('');
         mg.fromString(s)
 

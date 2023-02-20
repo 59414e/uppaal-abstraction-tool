@@ -323,13 +323,17 @@ class SynchronisationULabel extends ULabel {
 function ctxTemplateFunction(ctx) {
 	// let templateString = cleanUpStr(ctxTemplateRec(ctx));
 	let templateString = cleanUpStr(ctxTemplateWithCallback(ctx, (x)=>`$\{this["${x.getText()}"] ?? "${x.getText()}"\}`));
-	return new Function("return `" + templateString + "`;");
+	// let templateString = cleanUpStr(ctxTemplateWithCallback(ctx, (x)=>`$\#this["${x.getText()}"] ?? "${x.getText()}"\@`));
+	// templateString = templateString.replace(/\}/g, ']').replace(/\{/g,'[').replace(/\#/g, '\{').replace(/\@/g, '\}')
+    return new Function("return `" + templateString + "`;");
 }
 
 // A faster alternative for an eval()
 function ctxTemplateEval(ctx){
 	// let templateString = cleanUpStr(ctxTemplateEvalRec(ctx));
 	let templateString = cleanUpStr(ctxTemplateWithCallback(ctx, (x)=>`this["${x.getText()}"]`));
+	// templateString = templateString.replace(/\}/g, ']').replace(/\{/g,'[')
+    
     return new Function("return (" + templateString + ");");
 }
 
