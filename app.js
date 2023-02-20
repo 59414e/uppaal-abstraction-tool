@@ -7,12 +7,12 @@ import * as util from "util";
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-import {WARN, ERRR, DEBUG, SET_VERBOSE} from './simpleLogger.js';
-import {MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates, UPPER_APPROX, LOWER_APPROX, mapUnion, mapIntersection} from './Parser/multiAgentGraph.js';
-import { generateAbstraction } from './Parser/generateAbstract.js';
-import { AssignmentULabel } from './Parser/uLabel.js';
-import { parseTreeWalk } from './Parser/masParser.js';
-import { printTable } from './Parser/utils.js';
+import {WARN, ERRR, DEBUG, SET_VERBOSE} from './src/simpleLogger.js';
+import {MASGraph, approximateLocalDomain, computeExtMAS, printEdge, substituteConsts, unfoldTemplates, UPPER_APPROX, LOWER_APPROX, mapUnion, mapIntersection} from './src/multiAgentGraph.js';
+import { generateAbstraction } from './src/generateAbstract.js';
+import { AssignmentULabel } from './src/uLabel.js';
+import { parseTreeWalk } from './src/masParser.js';
+import { printTable } from './src/utils.js';
 
 const CONFIG_PATH = './config.json';
 const COMMAND = {

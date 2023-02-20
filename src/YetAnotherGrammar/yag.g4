@@ -1,7 +1,8 @@
 /*
+-------------------
 Yet Another Grammar
-notes:
-- check "else if" construct
+-------------------
+Notes:
 - no support for struct/typedef
 - (ALL) assignment operators assumed to be right-assoc
 - one assignment per statement (no 'x=1,y=2,z=3' seqs/cascades)
@@ -20,7 +21,6 @@ translation
 	: (vdec_list | fdec)+
 	;
 
-// begin{ULABELS}
 select_label
 	: select_pair (',' select_pair)*
 	;
@@ -28,7 +28,6 @@ select_pair
 	: vid=var_identifier ':' range=vtype
 	;
 
-// TODO: redefine with atomic term (as entry rule to stmt | fcall)
 assignment_label
 	: (assignment_stmt|fcall) (',' (assignment_stmt|fcall))* 
 	;
@@ -40,12 +39,6 @@ synchronisation_label
 	: chan=expr symb=('?'|'!')
 	;
 
-// dnf
-// 	: conjuction (OR dnf)?
-// 	;
-// conjuction
-// 	: literal (AND conjuction)?
-// 	;
 dnf
 	: conjuction (OR conjuction)*
 	;
@@ -59,12 +52,11 @@ literal
 	| BANG literal
 	| '(' literal ')'
 	| literal (MUL | DIV | MOD) literal // test
-	| literal (ADD | SUB) literal	// test
+	| literal (ADD | SUB) literal		// test
 	// | (ID | INTEGER | BOOLEAN)
 	| var_identifier  arr_size?
 	| INTEGER | BOOLEAN
 	;
-// end{ULABELS}
 
 vdec_list
 	: type=vtype vdec (',' vdec)* ';'
@@ -96,7 +88,6 @@ statement
 	: block
 	| vdec_list
     | FOR '(' assignment_stmt* ';' expr_list? ';' expr_list? ')' statement
-    // | FOR '(' expr_list ';' expr_list ';' expr_list ')' statement
 	| IF expr statement (ELSE statement)?
 	| WHILE expr statement
 	| DO statement WHILE expr ';'

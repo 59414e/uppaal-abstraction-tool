@@ -1,7 +1,7 @@
 import yagParser from './YetAnotherGrammar/yagParser.js';
 import { assignParseTree, ctxTemplateWithCallback, cleanUpStr, parseTreeWalk } from './masParser.js';
 import { arrayClone, cartesianProduct } from './utils.js';
-import { DEBUG } from '../simpleLogger.js';
+import { DEBUG } from './simpleLogger.js';
 
 const ULABEL_KINDS = ['select', 'guard', 'synchronisation', 'assignment'];
 

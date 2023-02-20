@@ -4,7 +4,7 @@ import antlr4 from 'antlr4';
 import yagLexer from './YetAnotherGrammar/yagLexer.js';
 import yagListener from "./YetAnotherGrammar/yagListener.js";
 import yagParser from './YetAnotherGrammar/yagParser.js';
-import { DEBUG, ERRR, INFO, WARN } from '../simpleLogger.js';
+import { DEBUG, ERRR, INFO, WARN } from './simpleLogger.js';
 import { INT16_MIN, INT16_MAX, MASParser, parseTreeWalk, ctxTemplateWithCallback, assignParseTree, cleanUpStr } from './masParser.js';
 import { ULABEL_KINDS, SelectULabel, GuardULabel, SynchronisationULabel, AssignmentULabel, ctxTemplateFunction} from './uLabel.js';
 import { cartesianProduct, arrayRange, arrayClone } from './utils.js';

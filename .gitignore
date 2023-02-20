@@ -11,5 +11,6 @@
 /xml_class_test.js
 /node_modules
 /output_files
-/Parser/YetAnotherGrammar/
-!/Parser/YetAnotherGrammar/*.g4
+/sample_input
+/src/YetAnotherGrammar/*
+!/src/YetAnotherGrammar/*.g4

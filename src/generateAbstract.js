@@ -3,7 +3,7 @@ import antlr4 from 'antlr4';
 import yagLexer from './YetAnotherGrammar/yagLexer.js';
 import yagListener from "./YetAnotherGrammar/yagListener.js";
 import yagParser from './YetAnotherGrammar/yagParser.js';
-import { DEBUG, ERRR, WARN } from '../simpleLogger.js';
+import { DEBUG, ERRR, WARN } from './simpleLogger.js';
 import { INT16_MIN, INT16_MAX, MASParser, parseTreeWalk, ctxTemplateWithCallback, assignParseTree, cleanUpStr } from './masParser.js';
 import { ULABEL_KINDS, SelectULabel, GuardULabel, SynchronisationULabel, AssignmentULabel, ctxTemplateFunction } from './uLabel.js';
 import { cartesianProduct, arrayRange, arrayClone } from './utils.js';
@@ -14,7 +14,6 @@ function generateAbstraction(mg, params) {
 
 
     // for each edge compute its var_trg_combination_index
-
 
     // per mapping function 
     // for(const fparams of params.f)
@@ -126,45 +125,6 @@ function generateAbstraction(mg, params) {
 
     ldec2 += arrArgsR.map(x => resetFunctionDeclaration(x)).join('\n');
 
-    // console.log(ldec);
-    // console.log(ldec2);
-
-    // let seenCombinations = new Set();
-    // let combToDomainLen = Object.keys(agent.nodes).reduce((acc,el)=>(acc[el]={}),{});
-    // let localDecPrefix = '';
-
-    // function getCombToDomainLen(lid, comb){        
-    //     if(d[lid].length==0 || d[lid][0].length==0)DEBUG(`unexpected to get an empty d`);
-
-    //     if(combToDomainLen?.[lid].hasOwnProperty(comb)){
-    //         return combToDomainLen[lid][comb];
-    //     }else{
-    //         // decode
-    //         let boolArr = comb.split('_');
-
-    //         let d_reduced = [...(new Set(
-    //             d[lid].map(
-    //                 x=>x.filter((y,ind)=>boolArr[ind])
-    //             )
-    //             .map(JSON.stringify)
-    //         ))];
-
-    //         let len = d_reduced.length;
-    //         argsR.map((v,i)=>{
-    //             if(boolArr[i]){
-    //                 localDecPrefix +=
-    //                 `const int _${v}_at_${lid}_comb${comb} = {${d_reduced.join(',').replace(/\[/gm, '\{').replace(/\]/gm, '\}')}};\n`;
-    //             }
-    //         })
-
-
-    //         // add its declaration
-
-    //         // save the length
-    //     }
-    // }
-
-
     let agent = mg.agents[targetAgentName];    
 
     let lidToCtxContext = Object.keys(agent.nodes).reduce((acc, lid) => {
@@ -218,9 +178,6 @@ function generateAbstraction(mg, params) {
         let paramsAssign = [...new Set(e.assignment.atomicVars.flat(Infinity))].filter(x => !setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
         let argsRSync = [...e.synchronisation?.vars].filter(x => setArgsR.has(x) && !(e.select?.selectors?.has(x) ?? false));
 
-
-
-        //todo[1]: double-check
         let occuringArgsR = paramsAssign ?
             new Set([
                 ...argsRGuard,
@@ -230,15 +187,6 @@ function generateAbstraction(mg, params) {
                 ...argsRGuard,
                 ...argsRSync
             ]);
-
-        // TODO
-        // let combCode = [...occuringArgsR].reduce((acc,el)=>(acc+=2**(argsRindexOf[el])), 0);
-        // let combCode = arrArgsR.map(x=> occuringArgsR.has(x) ? 1 : 0).join('_');
-        // let currDomainVar = `d_at_${e.src}_comb${combCode}`;
-        // 
-        // console.log(`edge ${e.assignment.content} has paramAssign=${paramsAssign?.join(',')}`);
-        
-
 
         let ctxContext = lidToCtxContext[e.src];
 
@@ -327,21 +275,22 @@ function generateAbstraction(mg, params) {
         }
         
         
-        // console.log({enterEdge, innerEdge, leaveEdge});
+        DEBUG({enterEdge, innerEdge, leaveEdge});
         
         // if argsR occurs (unshadowed) in guard/sync label OR assign-param OR assign-LHS demanding update of argsN 
         if (occuringArgsR.size > 0 || argsRAssign.length>0 && argsN?.length>0) {
             if(enterEdge){
                 // skip for the enter edges
+                DEBUG("case 1 - skip")
             }else if(!(occuringArgsR.size>0) && !(paramsAssign.length>0) && argsRAssign.length>0){
-                console.log(argsRGuard);        
-                DEBUG("@@@")
+                DEBUG("case 2 - skip")
             }else{
+                DEBUG("case 3 - no skip")
                 DEBUG(`edge ${e.src}-[ ${e.guard.content} : ${e.synchronisation.content} ${e.assignment.content} ]->${e.trg} will be extended with select`);
                 DEBUG(`${paramsAssign.length>0} and ${argsRAssign.length>0}`);
                 
                 if(!(paramsAssign.length>0) && !(argsN?.length>0) && !(argsRGuard.length > 0) && !(argsRSync.length > 0)){
-                    console.log("@@");                    
+                    DEBUG("case 3a - skip")
                 } else if(!(e.assignment.content==='' && e.guard.content==='')){
                     // let currDomainLength = getCombToDomainLen(e.src, combCode);
                     let currDomainLength = d[e.src].length - 1;
@@ -354,8 +303,6 @@ function generateAbstraction(mg, params) {
             
         }
 
-        
-
         return true;
     })
 
@@ -365,56 +312,18 @@ function generateAbstraction(mg, params) {
         agent.local = agent.local.replace(regIntBound, `int ${v} $2;`);
     });
 
-    console.log(agent.local);
-    
-
     agent.local = agent.local + ldec + ldec2;
 
-    // console.log(agent.tparam);    
-    // console.log(mg.agents["Voter"].tparam);
     mg.updateEdgesToForAll()
     return mg.toXML();
 }
 
 
 
-
-
-// function assumeArgsRCallString(combCode, hash, lid) {
-//     return `__${hash}_assume_at_${lid}_${combCode}(${lid})`
-// }
-
 function replaceBrackets(str) {
     return str.replace(/\[/gm, '\{').replace(/\]/gm, '\}');
 }
 
-
-
-// NOTE: soundness is guaranteed only for the models without function calls
-function removeRedundantAssignmentTerms(e, acontent, assumeLength, resetLength, enterEdge, innerEdge, leaveEdge){
-    let keepAssume = false;
-    let keepReset = false;
-    if(leaveEdge && !innerEdge){
-        keepAssume = true;
-    }
-    
-    if(enterEdge && !innerEdge){
-        keepReset = true;
-    }
-
-    // check if 
-
-    if(!keepAssume && keepReset){
-        acontent = acontent.slice(assumeLength);
-    }else if(keepAssume && !keepReset){
-        acontent = acontent.slice(0,assumeLength+resetLength-1)
-    }else if(!keepAssume && !keepReset){
-        
-    }else{ // keepAssume && keepReset
-        // no changes
-        return;
-    }
-}
 
 export default {};
 export { generateAbstraction };
