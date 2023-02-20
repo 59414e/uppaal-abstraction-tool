@@ -245,9 +245,7 @@ function parseTreeWalk(input, ruleName = 'translation') {
 	parser.buildParseTrees = true;
 	const tree = parser[ruleName]();
 	const myListener = new MASParser();
-	// tokens.fill()
-	// console.log(tokens.getTokens(0,tokens.getNumberOfOnChannelTokens())?.filter(x=>x.type==66).map(x=>x.text));
-
+	
 	antlr4.tree.ParseTreeWalker.DEFAULT.walk(myListener, tree);
 	return {
 		"tree": tree,

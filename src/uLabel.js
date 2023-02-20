@@ -14,7 +14,8 @@ class ULabel {
 	}
 }
 
-// TODO: add lazy-load for all ULabel child classes
+// TODO: compute the additional properties (for child classes) on-demand
+
 class SelectULabel extends ULabel {
 	static ruleName = 'select_label';
 	constructor(_content) {
@@ -158,26 +159,6 @@ class AssignmentULabel extends ULabel {
 		return this?.templateFunction.call(ctxContext) ?? '';
 	}
 
-    // toList(){
-    //     if(!this.extended)this.extendProperties();
-    //     return this.atomic?.map( ctx=>
-    //         [ctx.lhs.vid.getText(), ctx.lhs?.dim?.getText(), ctx.rhs.getText()]
-    //     )
-    // }
-
-    // ignores function calls
-    // getParameters(exceptSet = new Set()){
-    //     if(!this.extended)this.extendProperties();
-    //     return this?.atomic?.flatMap(ctx=>{
-    //         if(!exceptSet.has(ctx.lhs.vid.getText())){
-    //             return Object.keys(parseTreeWalk(ctx.rhs.getText(), 'expr').parser._varOccurences)
-    //         }else{
-    //             return [];
-    //         }
-    //     }) ?? [];   
-    // }
-
-
 	// all needed dict keys must be present
 	atomicEvalWithContext(ctxContextOrig = {}, inplace = true){
         if(!this.extended)this.extendProperties();
@@ -211,19 +192,12 @@ class AssignmentULabel extends ULabel {
                 console.error(`AssignmentULabel - unexpected type of atomic statement ${this.atomic[i][0]}`)
             }
 		}
-		// let n = this.pairs.length;
-		// for(let i=0; i<n; i++){
-		// 	if(this.pairs[i][1]){
-		// 		ctxContext[this.pairs[i][0]][(this.pairs[i][1].call(ctxContext))] = (this.pairs[i][2].call(ctxContext))
-		// 	}else{
-		// 		ctxContext[this.pairs[i][0]] = (this.pairs[i][2].call(ctxContext))
-		// 	}
-		// }
+		
 		return ctxContext;		
 	}
 }
 
-// must be in DNF (+ only `==` or `!=` operators)
+// must be in DNF with `==` or `!=` comparison only
 class GuardULabel extends ULabel {
 	static ruleName = 'dnf';
 	constructor(_content) {

@@ -53,22 +53,6 @@ function mapIntersection(trg, donor){
 	}
 }
 
-// class AgentGraph{
-// 	constructor(){
-// 		this.nodes = {};
-// 		this.edges = [];
-// 	}
-
-// 	fromXML(obj){
-		
-// 	}
-
-// 	setLocal(_local){
-// 		this.local = _local;
-// 		assignParseTree.call(this, this.local, 'translation')
-// 	}
-// }
-
 const LCOLOR_WHITE = 1;
 const LCOLOR_GREY = 2;
 const LCOLOR_BLACK = 3;
@@ -99,22 +83,18 @@ class MASGraph {
 		xmlParser.parseString(str, function (err, res) {
 			// global declarations
 			this.setGlobalDeclarations(res.nta.declaration[0] ?? '')
-			// this.global = res.nta.declaration[0] ?? '';
-			// assignParseTree.call(this, this.global, 'translation')
 
 			let agents = {};
 			this.system = res.nta.system;
 			res.nta.template.forEach(t => {
 				let tname = t.name[0]?._ ?? t.name[0];
 
-				// temp pointer to an agent graph/template
+				// temp reference to an agent graph/template
 				let obj = {};
 
 				obj.local = t.declaration?.[0] ?? '';
 
 				assignParseTree.call(obj, obj.local, 'translation')
-				
-				// t.constDict = Object.assign({}, obj.parser.constDict, this.parser.constDict);
 
 				// init location property is extracted outside to ensure consistency
 				obj.init = t.init[0]?.$?.ref;
@@ -264,7 +244,6 @@ class MASGraph {
 							let ctxContext = {
 								[tparamName]:tparamVal
 							}
-							// console.log(e["assignment"].content);
 							res.push({
 								src: e.src,
 								trg: e.trg,
@@ -285,7 +264,7 @@ class MASGraph {
 		if(updateEdgesTo)this.updateEdgesToForAll();
 	}
 
-	// must never be followed by computing the product (i.e., either prod->unfold->approx or unfold->approx)
+	// this must never be followed by computing the product (i.e., either prod->unfold->approx or unfold->approx)
 	unfoldAlternatives(){
 		// select choices
 		this.unfoldSelectEdges(false)
@@ -321,7 +300,7 @@ class MASGraph {
 			let t = this.agents[a];
 
 			if(!t.tparam){
-				// DEBUG(`Agent ${a} has no tparams`);
+				DEBUG(`Agent ${a} has no tparams`);
 				continue;
 			}
 
@@ -339,7 +318,6 @@ class MASGraph {
 							let ctxContext = {
 								[tparamName]:tparamVal
 							}
-							// console.log(e["assignment"].content);
 							res.push({
 								src: e.src,
 								trg: e.trg,
@@ -360,7 +338,7 @@ class MASGraph {
 		this.updateEdgesToForAll();
 	}
 
-	// todo[6]: invoke on demand for .edgesTo (when not up-to-date)
+	// TODO: invoke on demand computation for .edgesTo 
 	updateEdgesToForAll(){
 		for(const a in this.agents){
 			this.updateEdgesToFor(a);
@@ -378,17 +356,6 @@ class MASGraph {
 				t.nodes[e.src].edgesTo[e.trg] = [e];
 			}
 		})
-	}
-
-	//todo
-	checkAssumptions() {
-		// var name collisions/shadowing
-	}
-
-	//todo
-	toExtended() {
-		// let res = {};
-		// let numberOfAgents = Object.keys(this.agents);
 	}
 
 	// currently, in-place reduction 
@@ -414,7 +381,6 @@ class MASGraph {
 	}
 
 
-	// TOFIX: add tparam parsing
 	toXML() {
 		let str = 
 `<?xml version="1.0" encoding="utf-8"?>
@@ -477,7 +443,7 @@ class MASGraph {
 		return str;
 	}
 
-	// (temp) for debug
+	// mainly for debug
 	printEdges(){
 		for(const a in this.agents){
 			console.log(`Agent ${a}`);
@@ -488,7 +454,6 @@ class MASGraph {
 			console.groupEnd();
 		}
 	}
-
 
 	consumeConst(userDefined){
 		// can be consumed only once (even if new userDefined dict is provided)
@@ -551,7 +516,10 @@ class MASGraph {
 }
 
 function printEdge(e, inline=true){
+	// (Un)comment for plain output
 	// let str = `${e.src} --[ ${e.select?.content ? e.select.content+' . ' : ''} ${e.guard?.content || 'T'} : ${e?.synchronisation?.content ?? ''}${e.assignment?.content || '_'} ]-> ${e.trg}`;
+	
+	// (Un)comment for colourful output
 	let str = `${e.src} --[` + 
 		'\x1b[33m' + `${e.select?.content ? e.select.content+'. ' : ''}` + 
 		'\x1b[32m' + `${e.guard?.content || 'T'}: ` + 
@@ -565,10 +533,6 @@ function printEdge(e, inline=true){
 }
 
 
-// class ApproximationParameters{
-// 	constructor(){
-// 	}
-// }
 
 // always operates on an agent graph (either G_ext(MG) or G_template)
 function approximateLocalDomain(masGraph, params, approxType) {
@@ -586,9 +550,8 @@ function approximateLocalDomain(masGraph, params, approxType) {
 	let agentNames = Object.keys(masGraph.agents);
 	let targetAgent = params.targetTemplate ? masGraph.agents[params.targetTemplate] : masGraph.agents[agentNames[0]];
 
-	// console.log(targetAgent);
+	DEBUG(targetAgent);
 	
-
 	let loc = targetAgent.nodes; // <locID> to <location> dict
 	let locNames = Object.keys(loc);
 
@@ -659,9 +622,9 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		}
 	}
 
-	// fs.writeFileSync('./output_files/temp.txt', JSON.stringify(varDomainView, null, 4))
-	// console.log(varDomainView);
-	// return;
+	
+	// DEBUG(varDomainView);
+	
 
 	let priority = reachabilityMap(locNames, edges) ?? [];
 
@@ -671,8 +634,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		acc
 	), {});
 
-	// console.log(adjList)
-	// return;
+	// DEBUG(adjList)
 
 	// filter out edge labels, where target variables do not occur
 	edges.forEach(edge => {
@@ -689,8 +651,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		// we will only need those from guard and assignment
 		edge.vars = new Set([...edge.guard.vars, ...edge.assignment.vars].filter(v=>!targetVarIndexOf.hasOwnProperty(v)));
 		edge.ignore = ULABEL_KINDS.reduce((acc, kind) => acc && edge[kind].ignore, true)
-		// console.log(edge.vars);
-		// console.log(varDomainView);
+		// DEBUG(edge.vars);
 		edge.paramSpaceSize = [...edge.vars].reduce((acc,el)=>(acc*varDomainView[el].length), 1)
 	})
 
@@ -765,10 +726,9 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		}
 	}
 
-	// DEBUG(`local domain`);
-	// DEBUG(localDomain);
+	// DEBUG({localDomain});
 	
-	// temp fix - instead of "splitting" the location, select first good seed for submodel
+	// temporary fix - instead of "splitting" the location, select first "good" seed for submodel
 	if(approxType === LOWER_APPROX){
 		Object.entries(localDomain).map(pair=>{
 			if(pair[1].length){
@@ -873,11 +833,11 @@ function approximateLocalDomain(masGraph, params, approxType) {
 								let tmpVec = targetVars.map(v=>edgeContext[v]);
 								res[tmpVec.join(',')] = arrayClone(tmpVec);
 							}else{
-								// [changed on 10.01] - propagate the result from the guard
+								// [changed from 10.01] propagate the result from the guard
 								let tmpVec = targetVars.map(v=>edgeContext[v]);
 								res[tmpVec.join(',')] = arrayClone(tmpVec);
 							}
-							// console.log(res);
+							// DEBUG(res);
 						}	
 					}
 				}
@@ -926,7 +886,6 @@ function unfoldTemplates(mg){
 
 	let global = substituteConsts(mg.tree, constDict);
 
-	
 	// extract constants and remove+substitute tparam occurrences
 	for(const a in mg.agents){
 		let t = mg.agents[a];
@@ -939,7 +898,7 @@ function unfoldTemplates(mg){
 		}
 
 		t.local = substituteConsts(t.tree, tconstDict);
-		// todo[1]: check if substitution is desired
+		// todo[1]: add flags to skip substitution (if not needed/desired)
 		assignParseTree.call(t, t.local, 'translation')
 		
 		if(!t.tparam){
@@ -965,7 +924,7 @@ function unfoldTemplates(mg){
 			let right = constDict.hasOwnProperty(t.tparam[p][1]) ? constDict[t.tparam[p][1]]: t.tparam[p][1];
 			return arrayRange(Number(left), Number(right));
 		})
-		// let tparamVals = cartesianProduct(tparamNames.map(p=>t.tparam[p]));
+		
 		let tparamVals = cartesianProduct(...tparamRanges);
 
 		// DEBUG(`${a} is a template with parameters ${tparamNames.join(',')}:`)
@@ -1043,8 +1002,7 @@ function computeExtMAS(mg, keepLocationNames = true){
 	let xedges = [];
 
 	let lidToName = Object.entries(mg.agents).map(([k,a])=>Object.keys(a.nodes).reduce((acc,lid)=>(acc[lid]=a.nodes[lid].name,acc),{}) )
-	// let lidToName = agentNames.map(Object.keys(mg.agents[a].nodes).reduce((acc,lid)=>(acc[lid]=mg.agents[a].nodes[lid].name),{}));
-	console.log(lidToName);
+	DEBUG(lidToName);
 	
 	
 	xlocationChunks[xinit] = xinitChunks;
@@ -1082,7 +1040,7 @@ function computeExtMAS(mg, keepLocationNames = true){
 			let currAgentGraph = mg.agents[agentNames[i]];
 			let currAgentChunk = chunks[i];
 			for(const trg in currAgentGraph.nodes[currAgentChunk].edgesTo){
-				// equivalent to flatmat iteration over all outgoing edges
+				// equivalent to flatmap iteration over all outgoing edges
 				// let xtrgChunks = chunks.map((el,ind)=> ind==i ? trg: el);
 				let xtrgChunks = [...chunks];
 				xtrgChunks[i] = trg;
@@ -1161,13 +1119,9 @@ function computeExtMAS(mg, keepLocationNames = true){
 		}		
 	}
 
-
 	// parse results into a MASGraph instance
-
 	let res = new MASGraph();
 	res.setGlobalDeclarations(mg.global);
-
-	
 
 	let obj = {
 		nodes: Object.keys(xlocationChunks).reduce((acc,el)=>(acc[el]={
