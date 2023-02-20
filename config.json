@@ -1,7 +1,7 @@
 {
-    "input": "./examples/postal/postal.xml",
-    "output": "./examples/postal/abstract.xml",
-    "dmap": "./examples/postal/d.txt",
+    "input": "./examples/sai/sai_intr_fixed.xml",
+    "output": "./examples/sai/abstract.xml",
+    "dmap": "./examples/sai/d.txt",
     "verbose": 0,
     "unfold": 1
 }

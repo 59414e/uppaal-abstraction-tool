@@ -3,7 +3,7 @@
 <nta>
 	<declaration>// Place global declarations here.
 
-const int NA=5; // number of agents
+const int NA=3; // number of agents
 
 
 

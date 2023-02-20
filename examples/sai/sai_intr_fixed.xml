@@ -18,7 +18,7 @@ agent merges it with its own. To avoid potential deadlocks,
 sharing is always initiated by agents with even ID.
 */
 
-const int NA=3;         // number of agents
+const int NA=5;         // number of agents
 
 int[0,NA] impersonated; // impersonated agent
 
