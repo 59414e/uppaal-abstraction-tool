@@ -1,5 +1,5 @@
 {
-    "input": "./sample_input/sai_intr_fixed_str_avg.xml",
+    "input": "./sample_input/demo_postal.xml",
     "output": "./output_files/out.xml",
     "dmap": "./output_files/d.txt",
     "verbose": 2,

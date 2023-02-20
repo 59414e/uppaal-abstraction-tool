@@ -787,7 +787,7 @@ function approximateLocalDomain(masGraph, params, approxType) {
 		}
 		
 		loc[src].edgesTo[trg].forEach(edge => {
-			DEBUG(`Processing an edge from ${src} to ${trg}`)
+			DEBUG(`Processing an edge ${src} -[ ${edge.guard.content} : ${edge.synchronisation.content} ${edge.assignment.content} ]-> ${trg}`)
 			if (edge.ignore) {
 				DEBUG(`edge.ignore flag - propagating the src's approximation`)
 				approxOp(localDomain[trg], localDomain[src]);
@@ -808,38 +808,82 @@ function approximateLocalDomain(masGraph, params, approxType) {
 						}
 					}
 
-					// fill remaining vars
-					for(let i=0;i<prodSize;i++){
-						let edgeContext = Object.assign({}, ctxContext);
-						
-						let k = i;
-						
-						for(const v of edge.vars){
-							let l = varDomainView[v].length;
-							edgeContext[v] = varDomainView[v][k%l];
-							if(Array.isArray(edgeContext[v])){
-								edgeContext[v] = arrayClone(edgeContext[v]);
-							}
-							k=Math.floor(k/l);
-						}
-						
-						
-						if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){						
-							continue;
-						}
-						if(!edge.assignment.ignore){
-							edge.assignment.atomicEvalWithContext(edgeContext)
-							let tmpVec = targetVars.map(v=>edgeContext[v]);
-							res[tmpVec.join(',')] = tmpVec;
-						}else{
-							// [changed on 10.01] - propagate the result from the guard
-							let tmpVec = targetVars.map(v=>edgeContext[v]);
-							res[tmpVec.join(',')] = tmpVec;
-						}
-					}	
-				}
 
-				if(Object.keys(res).length!=0){
+					// only guard-sat filter
+					if(edge.assignment.ignore && !edge.guard.ignore){
+						// let freeVars = edge.guard.vars;
+						let canBeSatisfied = false;
+						if(!(edge.guard?.freeVars)){
+							edge.guard.freeVars = [...edge.guard.vars].filter(v=>targetVars.indexOf(v)===-1)
+						}
+
+						if(!(edge.guard?.freeVarsSpace)){
+							edge.guard.freeVarsSpace = 1;
+							for(const v of edge.guard.freeVars){
+								edge.guard.freeVarsSpace *= varDomainView[v].length;
+							}
+						}
+						
+						
+						for(let i=0; i<edge.guard.freeVarsSpace;i++){
+							let edgeContext = Object.assign({}, ctxContext);
+							let k = i;
+							for(const v of edge.guard.freeVars){
+								let l = varDomainView[v].length;
+								edgeContext[v] = varDomainView[v][k%l];
+								if(Array.isArray(edgeContext[v])){
+									edgeContext[v] = arrayClone(edgeContext[v]);
+								}
+								k=Math.floor(k/l);
+							}
+		
+
+							if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){						
+								continue;
+							}
+
+							canBeSatisfied=true;
+							break;
+						}
+
+						if(canBeSatisfied){
+							res[currVec.join(',')] = currVec;
+						}
+					}else{
+						// fill remaining vars
+						for(let i=0;i<prodSize;i++){
+							let edgeContext = Object.assign({}, ctxContext);
+							
+							let k = i;
+							
+							for(const v of edge.vars){
+								let l = varDomainView[v].length;
+								edgeContext[v] = varDomainView[v][k%l];
+								if(Array.isArray(edgeContext[v])){
+									edgeContext[v] = arrayClone(edgeContext[v]);
+								}
+								k=Math.floor(k/l);
+							}
+							
+							if(!edge.guard.ignore && !edge.guard.evalWithContext(edgeContext)){						
+								continue;
+							}
+							if(!edge.assignment.ignore){
+								edge.assignment.atomicEvalWithContext(edgeContext)
+								let tmpVec = targetVars.map(v=>edgeContext[v]);
+								res[tmpVec.join(',')] = arrayClone(tmpVec);
+							}else{
+								// [changed on 10.01] - propagate the result from the guard
+								let tmpVec = targetVars.map(v=>edgeContext[v]);
+								res[tmpVec.join(',')] = arrayClone(tmpVec);
+							}
+							// console.log(res);
+						}	
+					}
+				}
+				
+
+				if(Object.entries(res).length!=0){
 					approxOp(localDomain[trg],Object.values(res));
 				}
 			}

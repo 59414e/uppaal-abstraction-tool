@@ -46,7 +46,7 @@ const argv = yargs(hideBin(process.argv))
     })
     .config(JSON.parse(fs.readFileSync(CONFIG_PATH),'utf-8'))
     .command({
-        command: "configure <pairs...>",
+        command: "configure [pairs...]",
         aliases: ["config", "cfg"],
         desc: "Modify a config variables",
         handler:  (argv)=>{argv.command = COMMAND.CONFIG}
@@ -305,24 +305,30 @@ function handleAbstract(mg){
 }
 
 function handleConfig(){
-    let obj = JSON.parse(fs.readFileSync(CONFIG_PATH),'utf-8');
-    argv.pairs.forEach(pair=>{
-        let [key,val] = pair.split('=');
-        if(key=='i' | key=='input'){
-            obj.input = val
-        }else if(key=='o' || key=='output'){
-            obj.output = val;
-        }else if(key=='approximation'){
-            obj.approximation = val;
-        }else if(key=='abstraction'){
-            obj.abstraction = val;
-        }else if(key=='verbose' || key=='v'){
-            obj.verbose = Number(val);
-        }else if(key=='unfold'){
-            obj.unfold = Number(val);
-        }
-    })
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(obj, null, 4))
+    let configStr = fs.readFileSync(CONFIG_PATH,'utf-8');
+    let obj = JSON.parse(configStr,'utf-8');
+    if(argv?.pairs?.length){
+        argv.pairs.forEach(pair=>{
+            let [key,val] = pair.split('=');
+            if(key=='i' | key=='input'){
+                obj.input = val
+            }else if(key=='o' || key=='output'){
+                obj.output = val;
+            }else if(key=='type'){
+                obj.type = val;
+            }else if(key=='verbose' || key=='v'){
+                obj.verbose = Number(val);
+            }else if(key=='unfold'){
+                obj.unfold = Number(val);
+            }else if(key){
+                obj[key] = val;
+            }
+        })
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(obj, null, 4))    
+    }else{
+        console.log(configStr);
+    }
+    
 }
 
 

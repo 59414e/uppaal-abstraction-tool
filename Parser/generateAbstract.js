@@ -325,50 +325,7 @@ function generateAbstraction(mg, params) {
             
             e.assignment = new AssignmentULabel(acontent.filter(x=>x).join(',\n'))
         }
-        // else if(argsRAssign.length > 0){
-        //     // console.log(`edge ${e.assignment.content} has argsRAssign=${argsRAssign?.join(',')}`);
-        //     // argsR only appear on the LHS => remove those and only keep the assume for argsN
-        //     let acontent = e.assignment.atomic.filter(x => {
-        //         // console.log(`${x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))} for ${x[1].getText()}`)
-        //         return x[0] !== 'stmt' || !setArgsR.has(x[2]) || (e.select?.selectors?.has(x[2]))
-        //     }).map(x=>x[1].getText()).join(',')
-
-        //     if(argsN?.length){
-        //         if(innerEdge || leaveEdge){
-        //             // acontent = resetArgsN + acontent
-        //             acontent = [argsN.map(x=>resetFunctionCall(x[0])).join(','),acontent].filter(x=>x).join(',');
-        //         }
-        //         if(innerEdge || enterEdge){
-        //             // acontent += updateArgsN
-        //             if(acontent)acontent+=',';
-        //             acontent += argsN.map(x=>mergeFunctionCall(x[0])).join(',');
-        //         }
-        //     }
-        //     // console.log(`argsRAssign.size = ${argsRAssign.size}, content =${acontent}`);
-        //     e.assignment = new AssignmentULabel(acontent);
-        // }else{
-        //     // console.log(argsRAssign);
-        //     // console.log(paramsAssign);
-        //     // console.log(e.assignment.content);
-        // } 
-        // console.log(occuringArgsR);
-        // console.log(occuringArgsR.size);
-        // console.log(paramsAssign.length>0);
-        // console.log(argsRAssign.length>0);
         
-        // if(enterEdge){
-        //     console.log('@');
-        //     console.log(`${e.src}->${e.trg}`);
-        //     console.log({enterEdge, innerEdge, leaveEdge});
-        //     console.log('@');
-
-        //     let acontent  = [];
-        //     for (const v of arrArgsR) {
-        //         acontent.push(`${resetFunctionCall(v)}`)
-        //     }
-        //     e.assignment = new AssignmentULabel((e.assignment.content ? ',' : '') + acontent.join(',\n'));
-        // }
-
         
         // console.log({enterEdge, innerEdge, leaveEdge});
         
@@ -377,13 +334,14 @@ function generateAbstraction(mg, params) {
             if(enterEdge){
                 // skip for the enter edges
             }else if(!(occuringArgsR.size>0) && !(paramsAssign.length>0) && argsRAssign.length>0){
-                //
+                console.log(argsRGuard);        
+                DEBUG("@@@")
             }else{
-                DEBUG(`edge ${e.assignment.content} will be extended with select`);
+                DEBUG(`edge ${e.src}-[ ${e.guard.content} : ${e.synchronisation.content} ${e.assignment.content} ]->${e.trg} will be extended with select`);
                 DEBUG(`${paramsAssign.length>0} and ${argsRAssign.length>0}`);
                 
-                if(!(paramsAssign.length>0) && !(argsN?.length>0)){
-                    // console.log("@@");                    
+                if(!(paramsAssign.length>0) && !(argsN?.length>0) && !(argsRGuard.length > 0) && !(argsRSync.length > 0)){
+                    console.log("@@");                    
                 } else if(!(e.assignment.content==='' && e.guard.content==='')){
                     // let currDomainLength = getCombToDomainLen(e.src, combCode);
                     let currDomainLength = d[e.src].length - 1;
@@ -403,8 +361,8 @@ function generateAbstraction(mg, params) {
 
     // strip off the int bound for target vars
     fparams.argsR.forEach((v,i) => {
-        const regIntBound = new RegExp(`int\\s*(\\[[^\\]]*\\])\\s*${v}[^;]*;`, 'gm')
-        agent.local = agent.local.replace(regIntBound, `int ${v} = ${fparams.initVal[i]};`);
+        const regIntBound = new RegExp(`int\\s*(\\[[^\\]]*\\])\\s*${v}([^;]*);`, 'gm')
+        agent.local = agent.local.replace(regIntBound, `int ${v} $2;`);
     });
 
     agent.local = agent.local + ldec + ldec2;
