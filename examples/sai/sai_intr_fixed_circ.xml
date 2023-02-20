@@ -18,7 +18,7 @@ agent merges it with its own. To avoid potential deadlocks,
 sharing is always initiated by agents with even ID.
 */
 
-const int NA=6;         // number of agents
+const int NA=4;         // number of agents
 
 int[0,NA] impersonated; // impersonated agent
 
@@ -28,56 +28,33 @@ int[0,3] shqual;</declaration>
 		<name>Impersonator</name>
 		<location id="id0" x="0" y="0">
 		</location>
-		<location id="id1" x="204" y="0">
+		<location id="id1" x="-170" y="0">
 		</location>
-		<location id="id2" x="-170" y="0">
-		</location>
-		<location id="id3" x="408" y="0">
-		</location>
-		<init ref="id2"/>
-		<transition>
-			<source ref="id3"/>
-			<target ref="id0"/>
-		</transition>
+		<init ref="id1"/>
 		<transition>
 			<source ref="id0"/>
-			<target ref="id1"/>
-			<label kind="select" x="34" y="102">fqual:int[0,0]</label>
-			<label kind="guard" x="34" y="119">impersonated%2==0</label>
-			<label kind="synchronisation" x="34" y="136">share[impersonated][1+impersonated%NA]!</label>
-			<label kind="assignment" x="34" y="153">shqual=fqual</label>
+			<target ref="id0"/>
+			<label kind="select" x="-102" y="102">fqual:int[0,1]</label>
+			<label kind="guard" x="-102" y="119">impersonated%2==0</label>
+			<label kind="synchronisation" x="-102" y="136">share[impersonated][1+impersonated%NA]!</label>
+			<label kind="assignment" x="-102" y="153">shqual=fqual</label>
 			<nail x="102" y="102"/>
+			<nail x="-102" y="102"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
-			<target ref="id3"/>
-			<label kind="guard" x="374" y="42">impersonated%2==0</label>
-			<label kind="synchronisation" x="374" y="59">share[1+(NA+impersonated-2)%NA][impersonated]?</label>
-			<label kind="assignment" x="374" y="76">shqual=0</label>
-			<nail x="306" y="102"/>
-		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id3"/>
-			<label kind="select" x="374" y="-102">fqual:int[0,0]</label>
-			<label kind="guard" x="374" y="-85">impersonated%2==1</label>
-			<label kind="synchronisation" x="374" y="-68">share[impersonated][1+impersonated%NA]!</label>
-			<label kind="assignment" x="374" y="-51">shqual=fqual</label>
-			<nail x="306" y="-102"/>
-		</transition>
-		<transition>
-			<source ref="id2"/>
 			<target ref="id0"/>
 			<label kind="select" x="-153" y="-34">i:int[1,NA]</label>
 			<label kind="assignment" x="-153" y="-17">impersonated=i</label>
 		</transition>
 		<transition>
 			<source ref="id0"/>
-			<target ref="id1"/>
-			<label kind="guard" x="34" y="-153">impersonated%2==1</label>
-			<label kind="synchronisation" x="34" y="-136">share[1+(NA+impersonated-2)%NA][impersonated]?</label>
-			<label kind="assignment" x="34" y="-119">shqual=0</label>
+			<target ref="id0"/>
+			<label kind="guard" x="-102" y="-153">impersonated%2==1</label>
+			<label kind="synchronisation" x="-102" y="-136">share[1+(NA+impersonated-2)%NA][impersonated]?</label>
+			<label kind="assignment" x="-102" y="-119">shqual=0</label>
 			<nail x="102" y="-102"/>
+			<nail x="-102" y="-102"/>
 		</transition>
 	</template>
 	<template>
@@ -90,40 +67,40 @@ int[0,3] completion;
 int[0,3] mstatus;
 int[0,3] mqual;
 int[0,3] info;</declaration>
-		<location id="id4" x="-442" y="-102">
+		<location id="id2" x="-442" y="-102">
 		</location>
-		<location id="id5" x="-170" y="-102">
+		<location id="id3" x="-170" y="-102">
 		</location>
-		<location id="id6" x="-306" y="-306">
+		<location id="id4" x="-306" y="-306">
 		</location>
-		<location id="id7" x="-374" y="204">
+		<location id="id5" x="-374" y="204">
 		</location>
-		<location id="id8" x="-102" y="204">
+		<location id="id6" x="-102" y="204">
 		</location>
-		<location id="id9" x="34" y="204">
+		<location id="id7" x="34" y="204">
 		</location>
-		<location id="id10" x="34" y="612">
+		<location id="id8" x="34" y="612">
 		</location>
-		<location id="id11" x="-374" y="612">
+		<location id="id9" x="-374" y="612">
 			<name x="-384" y="578">wait</name>
 		</location>
-		<location id="id12" x="34" y="408">
+		<location id="id10" x="34" y="408">
 		</location>
-		<init ref="id6"/>
+		<init ref="id4"/>
 		<transition>
-			<source ref="id11"/>
-			<target ref="id11"/>
+			<source ref="id9"/>
+			<target ref="id9"/>
 			<label kind="comments" x="-510" y="518">wait</label>
 			<nail x="-510" y="612"/>
 			<nail x="-442" y="510"/>
 		</transition>
 		<transition>
-			<source ref="id10"/>
-			<target ref="id11"/>
+			<source ref="id8"/>
+			<target ref="id9"/>
 		</transition>
 		<transition>
-			<source ref="id12"/>
-			<target ref="id10"/>
+			<source ref="id10"/>
+			<target ref="id8"/>
 			<label kind="guard" x="-102" y="433">id%2==0</label>
 			<label kind="synchronisation" x="-102" y="450">share[1+(NA+id-2)%NA][id]?</label>
 			<label kind="assignment" x="-102" y="467">mqual=(mqual+shqual)/2,
@@ -131,21 +108,21 @@ shqual=0</label>
 			<nail x="-34" y="510"/>
 		</transition>
 		<transition>
-			<source ref="id12"/>
-			<target ref="id10"/>
+			<source ref="id10"/>
+			<target ref="id8"/>
 			<label kind="guard" x="102" y="518">id%2==1</label>
 			<label kind="synchronisation" x="102" y="535">share[id][1+id%NA]!</label>
 			<label kind="assignment" x="102" y="552">shqual=mqual</label>
 			<nail x="102" y="510"/>
 		</transition>
 		<transition>
-			<source ref="id11"/>
-			<target ref="id7"/>
+			<source ref="id9"/>
+			<target ref="id5"/>
 			<label kind="comments" x="-442" y="391">repeat</label>
 		</transition>
 		<transition>
-			<source ref="id9"/>
-			<target ref="id12"/>
+			<source ref="id7"/>
+			<target ref="id10"/>
 			<label kind="guard" x="103" y="314">id%2==1</label>
 			<label kind="synchronisation" x="102" y="331">share[1+(NA+id-2)%NA][id]?</label>
 			<label kind="assignment" x="102" y="348">mqual=(mqual+shqual)/2,
@@ -153,28 +130,28 @@ shqual=0</label>
 			<nail x="102" y="306"/>
 		</transition>
 		<transition>
-			<source ref="id9"/>
-			<target ref="id12"/>
+			<source ref="id7"/>
+			<target ref="id10"/>
 			<label kind="guard" x="-102" y="255">id%2==0</label>
 			<label kind="synchronisation" x="-102" y="272">share[id][1+id%NA]!</label>
 			<label kind="assignment" x="-102" y="289">shqual=mqual</label>
 			<nail x="-34" y="306"/>
 		</transition>
 		<transition>
-			<source ref="id8"/>
-			<target ref="id9"/>
+			<source ref="id6"/>
+			<target ref="id7"/>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id8"/>
+			<source ref="id5"/>
+			<target ref="id6"/>
 			<label kind="guard" x="-272" y="170">info==1</label>
 			<label kind="assignment" x="-272" y="187">info=0,
 mstatus=2,
 mqual=mqual+(mqual&lt;2)</label>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id8"/>
+			<source ref="id5"/>
+			<target ref="id6"/>
 			<label kind="guard" x="-272" y="68">info==0</label>
 			<label kind="assignment" x="-272" y="85">info=0,
 mstatus=1,
@@ -182,8 +159,8 @@ mqual=mqual-(mqual&gt;0)</label>
 			<nail x="-238" y="136"/>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id8"/>
+			<source ref="id5"/>
+			<target ref="id6"/>
 			<label kind="guard" x="-273" y="272">info==2</label>
 			<label kind="assignment" x="-272" y="289">info=0,
 mstatus=3,
@@ -191,46 +168,46 @@ mqual=mqual-(mqual&gt;0)</label>
 			<nail x="-238" y="272"/>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id7"/>
+			<source ref="id5"/>
+			<target ref="id5"/>
 			<label kind="guard" x="-509" y="68">info!=2</label>
 			<label kind="assignment" x="-510" y="85">info=info+completion</label>
 			<nail x="-510" y="204"/>
 			<nail x="-442" y="102"/>
 		</transition>
 		<transition>
-			<source ref="id5"/>
-			<target ref="id7"/>
+			<source ref="id3"/>
+			<target ref="id5"/>
 		</transition>
 		<transition>
-			<source ref="id5"/>
-			<target ref="id9"/>
+			<source ref="id3"/>
+			<target ref="id7"/>
 			<label kind="comments" x="-34" y="34">skip
 learning</label>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id4"/>
+			<source ref="id4"/>
+			<target ref="id2"/>
 			<label kind="guard" x="-450" y="-238">impersonated!=0 &amp;&amp;
 id!=impersonated</label>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id5"/>
+			<source ref="id2"/>
+			<target ref="id3"/>
 			<label kind="assignment" x="-425" y="-93">data=0,
 completion=1+(data&gt;=1)+(data&gt;=2)</label>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id4"/>
+			<source ref="id2"/>
+			<target ref="id2"/>
 			<label kind="guard" x="-577" y="-238">data!=2</label>
 			<label kind="assignment" x="-578" y="-221">data=data+1</label>
 			<nail x="-578" y="-102"/>
 			<nail x="-510" y="-204"/>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id5"/>
+			<source ref="id4"/>
+			<target ref="id3"/>
 			<label kind="guard" x="-288" y="-238">impersonated!=0 &amp;&amp;
 id!=impersonated</label>
 			<label kind="comments" x="-153" y="-221">skip

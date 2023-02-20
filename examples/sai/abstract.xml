@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
-	<declaration>/*
+    <declaration>/*
 The system is modelled as a ring network of AI machines.
 Protocol for each honest AI agent consists of three phases:
 data gathering, learning and sharing.
@@ -26,21 +26,19 @@ chan share[NA+1][NA+1];
 int[0,3] shqual;</declaration>
 	<template>
 		<name>Impersonator</name>
-		<declaration>// int quality;
-int[0,NA] snd;
-int[0,NA] rcv;
+		<declaration>
 		</declaration>
 		<location id="id0" x="0" y="0">
-			<name x="-10" y="-30">id0</name>
+			<name>id0</name>
 		</location>
 		<location id="id1" x="204" y="0">
-			<name x="194" y="-30">id1</name>
+			<name>id1</name>
 		</location>
 		<location id="id2" x="-170" y="0">
-			<name x="-180" y="-30">id2</name>
+			<name>id2</name>
 		</location>
 		<location id="id3" x="408" y="0">
-			<name x="398" y="-30">id3</name>
+			<name>id3</name>
 		</location>
 		<init ref="id2"/>
 		<transition>
@@ -50,38 +48,38 @@ int[0,NA] rcv;
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="select" x="42" y="-45">fqual:int[0,2]</label>
-			<label kind="guard" x="42" y="-30">impersonated%2==0 &amp;&amp; fqual!=2</label>
-			<label kind="synchronisation" x="42" y="-15">share[impersonated][1+impersonated%NA]!</label>
-			<label kind="assignment" x="42" y="0">shqual=fqual</label>
+				<label kind="select">fqual:int[0,0]</label>
+				<label kind="guard">impersonated%2==0</label>
+				<label kind="synchronisation">share[impersonated][1+impersonated%NA]!</label>
+				<label kind="assignment">shqual=fqual</label>
 		</transition>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id3"/>
-			<label kind="guard" x="246" y="-30">impersonated%2==0</label>
-			<label kind="synchronisation" x="246" y="-15">share[1+(NA+impersonated-2)%NA][impersonated]?</label>
-			<label kind="assignment" x="246" y="0">shqual=0</label>
+				<label kind="guard">impersonated%2==0</label>
+				<label kind="synchronisation">share[1+(NA+impersonated-2)%NA][impersonated]?</label>
+				<label kind="assignment">shqual=0</label>
 		</transition>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id3"/>
-			<label kind="select" x="246" y="-45">fqual:int[0,2]</label>
-			<label kind="guard" x="246" y="-30">impersonated%2==1 &amp;&amp; fqual!=2</label>
-			<label kind="synchronisation" x="246" y="-15">share[impersonated][1+impersonated%NA]!</label>
-			<label kind="assignment" x="246" y="0">shqual=fqual</label>
+				<label kind="select">fqual:int[0,0]</label>
+				<label kind="guard">impersonated%2==1</label>
+				<label kind="synchronisation">share[impersonated][1+impersonated%NA]!</label>
+				<label kind="assignment">shqual=fqual</label>
 		</transition>
 		<transition>
 			<source ref="id2"/>
 			<target ref="id0"/>
-			<label kind="select" x="-145" y="-45">i:int[1,NA]</label>
-			<label kind="assignment" x="-145" y="0">impersonated=i</label>
+				<label kind="select">i:int[1,NA]</label>
+				<label kind="assignment">impersonated=i</label>
 		</transition>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="guard" x="42" y="-30">impersonated%2==1</label>
-			<label kind="synchronisation" x="42" y="-15">share[1+(NA+impersonated-2)%NA][impersonated]?</label>
-			<label kind="assignment" x="42" y="0">shqual=0</label>
+				<label kind="guard">impersonated%2==1</label>
+				<label kind="synchronisation">share[1+(NA+impersonated-2)%NA][impersonated]?</label>
+				<label kind="assignment">shqual=0</label>
 		</transition>
 	</template>
 	<template>
@@ -260,38 +258,36 @@ void __reset_mstatus(){
 
 		</declaration>
 		<location id="id4" x="-442" y="-102">
-			<name x="-452" y="-132">id4</name>
+			<name>id4</name>
 		</location>
 		<location id="id5" x="-170" y="-102">
-			<name x="-180" y="-132">id5</name>
+			<name>id5</name>
 		</location>
 		<location id="id6" x="-306" y="-306">
-			<name x="-316" y="-336">id6</name>
+			<name>id6</name>
 		</location>
 		<location id="id7" x="-374" y="204">
-			<name x="-384" y="174">id7</name>
+			<name>id7</name>
 		</location>
 		<location id="id8" x="-102" y="204">
-			<name x="-112" y="174">id8</name>
+			<name>id8</name>
 		</location>
 		<location id="id9" x="34" y="204">
-			<name x="24" y="174">id9</name>
+			<name>id9</name>
 		</location>
 		<location id="id10" x="34" y="612">
-			<name x="24" y="582">id10</name>
+			<name>id10</name>
 		</location>
 		<location id="id11" x="-374" y="612">
-			<name x="-384" y="582">wait</name>
+			<name>wait</name>
 		</location>
 		<location id="id12" x="34" y="408">
-			<name x="24" y="378">id12</name>
+			<name>id12</name>
 		</location>
 		<init ref="id6"/>
 		<transition>
 			<source ref="id11"/>
 			<target ref="id11"/>
-			<nail x="-404" y="582"/>
-			<nail x="-344" y="582"/>
 		</transition>
 		<transition>
 			<source ref="id10"/>
@@ -300,17 +296,17 @@ void __reset_mstatus(){
 		<transition>
 			<source ref="id12"/>
 			<target ref="id10"/>
-			<label kind="guard" x="-26" y="480">id%2==0</label>
-			<label kind="synchronisation" x="-26" y="495">share[1+(NA+id-2)%NA][id]?</label>
-			<label kind="assignment" x="-26" y="510">mqual=(mqual+shqual)/2,
+				<label kind="guard">id%2==0</label>
+				<label kind="synchronisation">share[1+(NA+id-2)%NA][id]?</label>
+				<label kind="assignment">mqual=(mqual+shqual)/2,
 shqual=0</label>
 		</transition>
 		<transition>
 			<source ref="id12"/>
 			<target ref="id10"/>
-			<label kind="guard" x="-26" y="480">id%2==1</label>
-			<label kind="synchronisation" x="-26" y="495">share[id][1+id%NA]!</label>
-			<label kind="assignment" x="-26" y="510">shqual=mqual</label>
+				<label kind="guard">id%2==1</label>
+				<label kind="synchronisation">share[id][1+id%NA]!</label>
+				<label kind="assignment">shqual=mqual</label>
 		</transition>
 		<transition>
 			<source ref="id11"/>
@@ -319,17 +315,17 @@ shqual=0</label>
 		<transition>
 			<source ref="id9"/>
 			<target ref="id12"/>
-			<label kind="guard" x="-26" y="276">id%2==1</label>
-			<label kind="synchronisation" x="-26" y="291">share[1+(NA+id-2)%NA][id]?</label>
-			<label kind="assignment" x="-26" y="306">mqual=(mqual+shqual)/2,
+				<label kind="guard">id%2==1</label>
+				<label kind="synchronisation">share[1+(NA+id-2)%NA][id]?</label>
+				<label kind="assignment">mqual=(mqual+shqual)/2,
 shqual=0</label>
 		</transition>
 		<transition>
 			<source ref="id9"/>
 			<target ref="id12"/>
-			<label kind="guard" x="-26" y="276">id%2==0</label>
-			<label kind="synchronisation" x="-26" y="291">share[id][1+id%NA]!</label>
-			<label kind="assignment" x="-26" y="306">shqual=mqual</label>
+				<label kind="guard">id%2==0</label>
+				<label kind="synchronisation">share[id][1+id%NA]!</label>
+				<label kind="assignment">shqual=mqual</label>
 		</transition>
 		<transition>
 			<source ref="id8"/>
@@ -338,31 +334,29 @@ shqual=0</label>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id8"/>
-			<label kind="select" x="-298" y="159">_:int[0,13]</label>
-			<label kind="guard" x="-298" y="174">__d_at_id7_of_info[_] == 1</label>
-			<label kind="assignment" x="-298" y="204">mqual=mqual+(mqual&lt;2)</label>
+				<label kind="select">_:int[0,13]</label>
+				<label kind="guard">__d_at_id7_of_info[_] == 1</label>
+				<label kind="assignment">mqual=mqual+(mqual&lt;2)</label>
 		</transition>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id8"/>
-			<label kind="select" x="-298" y="159">_:int[0,13]</label>
-			<label kind="guard" x="-298" y="174">__d_at_id7_of_info[_] == 0</label>
-			<label kind="assignment" x="-298" y="204">mqual=mqual-(mqual&gt;0)</label>
+				<label kind="select">_:int[0,13]</label>
+				<label kind="guard">__d_at_id7_of_info[_] == 0</label>
+				<label kind="assignment">mqual=mqual-(mqual&gt;0)</label>
 		</transition>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id8"/>
-			<label kind="select" x="-298" y="159">_:int[0,13]</label>
-			<label kind="guard" x="-298" y="174">__d_at_id7_of_info[_] == 2</label>
-			<label kind="assignment" x="-298" y="204">mqual=mqual-(mqual&gt;0)</label>
+				<label kind="select">_:int[0,13]</label>
+				<label kind="guard">__d_at_id7_of_info[_] == 2</label>
+				<label kind="assignment">mqual=mqual-(mqual&gt;0)</label>
 		</transition>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id7"/>
-			<label kind="select" x="-434" y="159">_:int[0,13]</label>
-			<label kind="guard" x="-434" y="174">__d_at_id7_of_info[_]!= 2</label>
-			<nail x="-404" y="174"/>
-			<nail x="-344" y="174"/>
+				<label kind="select">_:int[0,13]</label>
+				<label kind="guard">__d_at_id7_of_info[_]!= 2</label>
 		</transition>
 		<transition>
 			<source ref="id5"/>
@@ -375,7 +369,7 @@ shqual=0</label>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id4"/>
-			<label kind="guard" x="-434" y="-234">impersonated!=0 &amp;&amp;
+				<label kind="guard">impersonated!=0 &amp;&amp;
 id!=impersonated</label>
 		</transition>
 		<transition>
@@ -385,15 +379,13 @@ id!=impersonated</label>
 		<transition>
 			<source ref="id4"/>
 			<target ref="id4"/>
-			<label kind="select" x="-502" y="-147">_:int[0,2]</label>
-			<label kind="guard" x="-502" y="-132">__d_at_id4_of_data[_]!= 2</label>
-			<nail x="-472" y="-132"/>
-			<nail x="-412" y="-132"/>
+				<label kind="select">_:int[0,2]</label>
+				<label kind="guard">__d_at_id4_of_data[_]!= 2</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id5"/>
-			<label kind="guard" x="-298" y="-234">impersonated!=0 &amp;&amp;
+				<label kind="guard">impersonated!=0 &amp;&amp;
 id!=impersonated</label>
 		</transition>
 	</template>
@@ -403,10 +395,10 @@ id!=impersonated</label>
 
 system AI, Impersonator;
 </system>
-	<queries>
-		<query>
-			<formula></formula>
-			<comment></comment>
-		</query>
-	</queries>
+    <queries>
+        <query>
+            <formula></formula>
+            <comment></comment>
+        </query>
+    </queries>
 </nta>
