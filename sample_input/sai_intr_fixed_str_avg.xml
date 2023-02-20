@@ -1,17 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
-	<declaration>// Place global declarations here.
+	<declaration>/*
+The system is modelled as a ring network of AI machines.
+Protocol for each honest AI agent consists of three phases:
+data gathering, learning and sharing.
+During data gathering agent collects data required for the 
+learning phase. Depending on the amount of collected data, 
+it is marked as incomplete, complete or excessive.
+Learning phase may result with internal AI component being
+overtrained, undertrained or properly trained, depending on
+the number of learning iterations and amount of data collected.
+During the sharing phase each agent receives AI component from
+agent with previous ID and sends its model to the agent with next ID
+(modulo number of agents). Upon the receiving of a component 
+agent merges it with its own. To avoid potential deadlocks, 
+sharing is always initiated by agents with even ID.
+*/
 
-const int NA=3; // number of agents
+const int NA=3;         // number of agents
+
 int[0,NA] impersonated; // impersonated agent
 
-
-
 chan share[NA+1][NA+1];
-
-int[0,3] shqual;
-</declaration>
+int[0,3] shqual;</declaration>
 	<template>
 		<name>Impersonator</name>
 		<declaration>// int quality;
