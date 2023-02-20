@@ -87,13 +87,6 @@ SET_VERBOSE(argv["v"] ?? 0);
     if(argv.command === COMMAND.CONFIG){
         handleConfig();
     }else{
-        // console.log(argv);
-        // console.log(`verbosity level = ${argv["v"]}`);
-        // process.exit(1)
-        
-        // let x = JSON.parse(fs.readFileSync(CONFIG_PATH),'utf-8')
-        // console.log(x);
-        
         let mg = new MASGraph();
         readXmlString(argv["i"], (str)=>mg.fromString(str), ()=>process.exit(0))
         if(argv.command === COMMAND.INFO){
@@ -111,9 +104,10 @@ process.exit(0)
 
 function handleInfo(mg){
     let sArr = argv["selector"]?.split('.') ?? '';
+    
+    // todo: add print all (e.g. on \ast selector)
     if(sArr.length === 0){
-        // print all   
-        console.log(`all info printed`);
+        console.log(`No selector was given`);
     }else{
         let rootSelector = sArr[0];
         let childSelector = sArr?.[1];
@@ -239,8 +233,6 @@ function handleApprox(mg){
         }else{
             mg = unfoldTemplates(mg)
             if(obj["reduceTo"]){
-                // console.log(obj["reduceTo"]);
-                // console.log(Object.keys(mg.agents));
                 obj["reduceToInd"] = Object.keys(mg.agents).indexOf(obj["reduceTo"]);
             }
             mg = computeExtMAS(mg);    
@@ -261,13 +253,12 @@ function handleApprox(mg){
             ld = ld.reduce((acc,x)=>(acc[x[0]]=[...x[1].values()],acc),{})
         }
 
-        // console.log(ld);
         fs.writeFileSync(argv["dmap"], desc+ JSON.stringify(ld,null,4))
     }
 }
 
 function handleAbstract(mg){
-    // console.log(argv["params"]);
+    // DEBUG(argv["params"]);
     let obj = argv["params"].map(x=>x.split('=')).reduce((acc,x)=>(acc[x[0]]=x[1], acc), {})
     obj = Object.assign(argv, obj)
 
@@ -287,8 +278,7 @@ function handleAbstract(mg){
     if(obj["dmap"]){
         myd = fs.readFileSync(obj["dmap"],'utf-8');            
         myd = JSON.parse(myd.replace(/\/\*[^\*]*\*\//g, ''));
-        // console.log(myd);
-        // myd = myd.reduce((acc,x)=>(acc[x[0]]=new Map(x[1]),acc),{})
+        // DEBUG(myd);
         obj.d = myd
     }
     
@@ -357,7 +347,7 @@ function restrictionOfLocalDomain(ld, i, with_union=true, sep=','){
     let mapOp = with_union ? mapUnion : mapIntersection;
         
     for(const [loc,map] of ld){
-        // console.log(`cutting out ${i}-th element of ${loc}`);
+        // DEBUG(`cutting out ${i}-th element of ${loc}`);
         let lid = loc.split(sep)[i];
         if(!res.hasOwnProperty(lid)){
             res[lid] = new Map(map)
