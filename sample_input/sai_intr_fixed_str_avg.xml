@@ -18,15 +18,21 @@ agent merges it with its own. To avoid potential deadlocks,
 sharing is always initiated by agents with even ID.
 */
 
-const int NA=3;         // number of agents
+const int NA=3;         // number of AI agents
 
-int[0,NA] impersonated; // impersonated agent
+int[0,NA] impersonated; // impersonated AI agent
 
 chan share[NA+1][NA+1];
 int[0,3] shqual;</declaration>
 	<template>
 		<name>Impersonator</name>
-		<declaration>// int quality;
+		<declaration>/* 
+Impersonator - acts in-place of one of the AI agents, adding some
+unwanted behaviour. It only participates in sharing phase and can 
+fake its component quality.
+*/
+
+// Auxiliary variables
 int[0,NA] snd;
 int[0,NA] rcv;</declaration>
 		<location id="id0" x="0" y="0">
@@ -86,13 +92,14 @@ int[0,NA] rcv;</declaration>
 	<template>
 		<name x="5" y="5">AI</name>
 		<parameter>int[1,NA] id</parameter>
-		<declaration>// Place local declarations here.
+		<declaration>// Honest AI agent
 
-int[0,3] data;
-int[0,3] completion;
-int[0,3] mstatus;
-int[0,3] mqual;
-int[0,3] info;</declaration>
+int[0,3] data;        
+int[0,3] completion;  // 1 - incomplete, 2 - complete, 3 - excessive 
+int[0,3] info;
+int[0,3] mstatus;     // 1 - undertrained, 2 - properly trained, 3 - excessive
+int[0,3] mqual;       
+</declaration>
 		<location id="id4" x="-442" y="-102">
 		</location>
 		<location id="id5" x="-170" y="-102">

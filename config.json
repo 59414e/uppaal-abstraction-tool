@@ -1,7 +1,7 @@
 {
-    "input": "./sample_input/demo_postal.xml",
-    "output": "./output_files/out.xml",
-    "dmap": "./output_files/d.txt",
-    "verbose": 2,
+    "input": "./examples/postal/postal.xml",
+    "output": "./examples/postal/abstract.xml",
+    "dmap": "./examples/postal/d.txt",
+    "verbose": 0,
     "unfold": 1
 }
