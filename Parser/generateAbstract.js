@@ -365,6 +365,9 @@ function generateAbstraction(mg, params) {
         agent.local = agent.local.replace(regIntBound, `int ${v} $2;`);
     });
 
+    console.log(agent.local);
+    
+
     agent.local = agent.local + ldec + ldec2;
 
     // console.log(agent.tparam);    

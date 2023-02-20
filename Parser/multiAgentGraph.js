@@ -121,7 +121,7 @@ class MASGraph {
 
 				obj.nodes = t.location.reduce((acc, el) => (
 					acc[el.$.id] = {
-						name: el.name?.[0]?._ ?? el.$.id,
+						name: (el.name?.[0]?._ || el.name?.[0]) ?? el.$.id,
 						pos: {
 							x: el.$.x,
 							y: el.$.y

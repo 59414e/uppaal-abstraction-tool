@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+    <declaration>/*
+Model represents a simple postal voting protocol. 
+It is parameterized by the number of Voters (NV) and candidates (NC).
+Each voter must declares if election should be sent to her by post (dec=2)
+or if it will be collected inperson (dec=1). She then waits until it is 
+delivered or available for collection, and upon obtaining casts her vote 
+with filling blank with chosen candidate on voter&#039;s card with signature,
+or possibly leaving any of those empty.
+Authority interacts with Voters and performs actions corresponding to 
+consequent (non-overlapping) phases: declaration collection, election 
+package preparation and distribution, ballot casting and tallying. 
+A vote is counted/added to the tally iff both voting card was signed 
+and the ballot was filled.
+*/
+
+const int NV = 6;
+const int NC = 3;
+
+// Channels and auxiliary variables to model communication
+chan decl[NV+1];
+chan coll[NV+1];
+chan vote[NV+1];
+
+int[0,2] sh_dec;             // 1 - inperson, 2 - by mail
+int[0,1] buff_mail[NV+1];    // election package is delivered to mailbox
+int[0,NC] sh_vt;             // chosen candidate (or blank)
+int[0,1] sh_sg;              // voter&#039;s card was (un)signed</declaration>
+	<template>
+		<name>Voter</name>
+		<parameter>int[1,NV] id</parameter>
+		<declaration>// Voter&#039;s local declarations
+int mem_dec;
+int[0,1] mem_sg;
+int[0,NC] mem_vt;
+const int __d_at_id0_of_mem_dec[2] = {2,1};
+const int __d_at_id1_of_mem_dec[2] = {2,1};
+const int __d_at_id2_of_mem_dec[2] = {1,2};
+const int __d_at_id3_of_mem_dec[1] = {0};
+const int __init_mem_dec = 0;
+void __assume_at_id0_of_mem_dec(int _){
+	mem_dec = __d_at_id0_of_mem_dec[_];
+}
+void __assume_at_id1_of_mem_dec(int _){
+	mem_dec = __d_at_id1_of_mem_dec[_];
+}
+void __assume_at_id2_of_mem_dec(int _){
+	mem_dec = __d_at_id2_of_mem_dec[_];
+}
+void __assume_at_id3_of_mem_dec(int _){
+	mem_dec = __d_at_id3_of_mem_dec[_];
+}
+void __reset_mem_dec(){
+	mem_dec = __init_mem_dec;
+}
+
+		</declaration>
+		<location id="id0" x="68" y="-272">
+			<name>has</name>
+		</location>
+		<location id="id1" x="260" y="-272">
+			<name>end</name>
+		</location>
+		<location id="id2" x="-124" y="-272">
+			<name>waits</name>
+		</location>
+		<location id="id3" x="-316" y="-272">
+			<name>idle</name>
+		</location>
+		<init ref="id3"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+				<label kind="select">vt:int[0,NC],
+sg:int[0,1]</label>
+				<label kind="synchronisation">vote[id]!</label>
+				<label kind="assignment">sh_vt=vt,
+sh_sg=sg,
+mem_sg=sg,
+mem_vt=vt</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+				<label kind="guard">mem_dec==2 &amp;&amp; buff_mail[id]==1</label>
+				<label kind="assignment">buff_mail[id]=0,
+__reset_mem_dec()</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+				<label kind="guard">mem_dec==1</label>
+				<label kind="synchronisation">coll[id]!</label>
+				<label kind="assignment">__reset_mem_dec()</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+				<label kind="select">dec:int[1,2]</label>
+				<label kind="synchronisation">decl[id]!</label>
+				<label kind="assignment">mem_dec=dec,
+sh_dec=dec</label>
+		</transition>
+	</template>
+	<template>
+		<name>Authority</name>
+		<declaration>// Official&#039;s registars
+int[0,2] dec_recv[NV];       
+int[0,1] pack_sent[NV+1];
+int[0,NC] vt_recv[NV+1]; 
+int[0,1] sg_recv[NV+1]; 
+
+int[0,NV] tally_1;
+int[0,NV] tally_2;
+int[0,NV] tally_3;
+
+
+// Auxiliary
+int tallySum(){
+  return tally_1+tally_2+tally_3;
+}
+
+int packSum(){
+  int i,res;
+  for(i=0;i&lt;=NV;i++){
+    res = res + pack_sent[i];
+  }
+  return res;
+  //return (sum(i:int[0,NV])pack_sent[i]);
+}
+		</declaration>
+		<location id="id4" x="288" y="0">
+			<name>coll_vts</name>
+		</location>
+		<location id="id5" x="128" y="0">
+			<name>send_ep</name>
+		</location>
+		<location id="id6" x="-32" y="0">
+			<name>coll_dec</name>
+		</location>
+		<init ref="id6"/>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id4"/>
+				<label kind="select">v_i:int[1,NV]</label>
+				<label kind="synchronisation">vote[v_i]?</label>
+				<label kind="assignment">tally_1 = (sh_sg &amp;&amp; sh_vt==1) + tally_1,
+tally_2 = (sh_sg &amp;&amp; sh_vt==2) + tally_2,
+tally_3 = (sh_sg &amp;&amp; sh_vt==3) + tally_3,
+sh_vt=0,
+sh_sg=0</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+				<label kind="select">v_i:int[1,NV]</label>
+				<label kind="guard">dec_recv[v_i-1]==2 &amp;&amp;
+pack_sent[v_i]==0</label>
+				<label kind="assignment">buff_mail[v_i]=1,
+pack_sent[v_i]=pack_sent[v_i]+1</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id5"/>
+				<label kind="select">v_i:int[1,NV]</label>
+				<label kind="guard">dec_recv[v_i-1]==1 &amp;&amp;
+pack_sent[v_i]==0</label>
+				<label kind="synchronisation">coll[v_i]?</label>
+				<label kind="assignment">pack_sent[v_i]=pack_sent[v_i]+1</label>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id4"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id5"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id6"/>
+				<label kind="select">v_i:int[1,NV]</label>
+				<label kind="synchronisation">decl[v_i]?</label>
+				<label kind="assignment">dec_recv[v_i-1]=sh_dec,
+sh_dec=0</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+// List one or more processes to be composed into a system.
+system Voter, Authority;
+</system>
+    <queries>
+        <query>
+            <formula></formula>
+            <comment></comment>
+        </query>
+    </queries>
+</nta>
