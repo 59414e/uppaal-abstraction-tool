@@ -83,7 +83,7 @@ Part a:
 
 ```sh
 ./app.js approx 1 targetVars=mem_dec initVal=0 targetTemplate=Voter
-./app.js -o ./examples/postal/temp.xml approx 1 targetVars=mem_dec initVal=0 targetTemplate=Voter scope=id0,id1
+./app.js -o ./examples/postal/temp.xml abstract targetVars=mem_dec initVal=0 targetTemplate=Voter scope=id0,id1
 ```
 
 Part b:
@@ -97,4 +97,12 @@ Part b:
 ```sh
 mv examples/postal/abstract.xml examples/postal/abstract2.xml
 rm examples/postal/temp.xml
+```
+
+### Abstraction 3 
+
+Use result of abstaction 1 as the input and proceed as with abstraction 2.
+
+```sh
+./app.js config input=./examples/postal/abstraction1.xml
 ```
