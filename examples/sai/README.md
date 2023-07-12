@@ -1,3 +1,9 @@
+[Upd-2023-07-12]: 
+* a model specification in `sai.xml`, `sai_intr.xml`, `sai_intr_fixed.xml` had minor deviations from the one used in STV;
+* a newer version of SAI model can be found in `updated/` subdirectory;
+* as reported benchmarks refer to an older (non-updated) variant, both versions are available;
+
+
 # Socially explainable AI
 
 Based on the STV models from [arXiv:2302.01063](https://arxiv.org/abs/2302.01063).
