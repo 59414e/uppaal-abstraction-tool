@@ -7,7 +7,7 @@ Demonstration on youtube [(link)](https://www.youtube.com/watch?v=1tlyH1G9278)
 * node.js (v14+)
 * antlr4 [(link)](https://github.com/antlr/antlr4/blob/4.6/doc/getting-started.md)
 * ps2pdf (optional/qol)  
-
+* Uppaal v4.1+ 
 
 Dependencies:  
 
